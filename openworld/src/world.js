@@ -2,7 +2,7 @@
    trees and street lamps. Merged/instanced geometry keeps draw calls low. */
 
 import * as THREE from "three";
-import { boxWithUV, planeWithUV, place, merge, mergeColored } from "./geo.js?v=a54b142";
+import { boxWithUV, planeWithUV, place, merge, mergeColored } from "./geo.js?v=c77f079";
 import {
   toWorld,
   BLOCK_S,
@@ -12,8 +12,8 @@ import {
   N_BLOCKS,
   SIDEWALK,
   collisionBoxes,
-} from "./city.js?v=a54b142";
-import { buildColliderGrid } from "./physics.js?v=a54b142";
+} from "./city.js?v=c77f079";
+import { buildColliderGrid } from "./physics.js?v=c77f079";
 
 const TEX_DIR = "assets/tex/";
 const ALBEDO = ["asphalt", "sidewalk", "facade-glass", "facade-concrete", "facade-brick", "grass"];

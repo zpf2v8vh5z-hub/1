@@ -70,7 +70,7 @@
 <div id="loading" class="overlay">
   <div class="panel">
     <div class="brand">LIBERTY<span>HEIGHTS</span></div>
-    <div class="build-badge" id="load-build">va54b142 · 5221388</div>
+    <div class="build-badge" id="load-build">vc77f079 · 1c14dd4</div>
     <p class="tag">Open-World-Sandbox · three.js · KI-Texturen</p>
     <div class="loader"><i id="load-fill"></i></div>
     <p id="load-text" class="load-text">Stadt wird generiert …</p>
@@ -94,7 +94,7 @@
       <div><kbd>H</kbd><em>Hupe</em><kbd>M</kbd><em>Ton aus</em><kbd>Esc</kbd><em>Pause</em></div>
     </div>
 
-    <p id="build-id" class="build-line">va54b142 · 5221388 · <button id="diagnose" class="link-btn" type="button">Diagnose</button></p>
+    <p id="build-id" class="build-line">vc77f079 · 1c14dd4 · <button id="diagnose" class="link-btn" type="button">Diagnose</button></p>
 
     <p class="note">Tipp: Jedes Fahrzeug in der Stadt gehört dir, wenn du es erreichen kannst. Je mehr Aufmerksamkeit du erregst, desto mehr Sterne — und desto mehr Polizei.</p>
     <label class="touch-toggle">
@@ -133,8 +133,51 @@
 <div id="fatal" class="fatal hidden"></div>
 
 <script>
+  /* Runs BEFORE the game module on purpose: if the module throws or never
+     executes (blocked storage, missing WebGL, 404 on a file), this still works
+     and tells the player what happened instead of showing a frozen loading bar. */
+  window.__lhFatal = function (message, detail) {
+    var box = document.getElementById("fatal");
+    var loadText = document.getElementById("load-text");
+    var bar = document.getElementById("load-fill");
+    if (bar) { bar.style.width = "100%"; bar.style.background = "#ff5b4a"; }
+    if (loadText) loadText.textContent = "Start abgebrochen";
+    if (box) {
+      box.classList.remove("hidden");
+      box.innerHTML = '<b>Fehler beim Start</b><br>' + String(message) +
+        (detail ? '<br><span style="opacity:.7">' + String(detail) + '</span>' : '');
+    }
+    document.getElementById("loading") && document.getElementById("loading").classList.remove("hidden");
+    console.error("[liberty]", message, detail || "");
+  };
+
+  window.addEventListener("error", function (e) {
+    window.__lhFatal(e.message || "Unbekannter Fehler", (e.filename || "") + ":" + (e.lineno || "?"));
+  });
+  window.addEventListener("unhandledrejection", function (e) {
+    var r = e.reason;
+    window.__lhFatal(r && r.message ? r.message : String(r), "unhandled rejection");
+  });
+
+  // watchdog: a module that never runs cannot report anything, so look for it
+  var lhStarted = false;
+  window.__lhMarkStarted = function () { lhStarted = true; };
+  setTimeout(function () {
+    if (lhStarted) return;
+    var load = document.getElementById("loading");
+    if (!load || load.classList.contains("hidden")) return;
+    window.__lhFatal(
+      "Das Spiel-Modul wurde nicht ausgel\u00f6st (nach 8 Sekunden ohne Start).",
+      "H\u00e4ufigste Ursachen: blockierter localStorage in einem sandboxed iframe, " +
+      "fehlende WebGL-Unterst\u00fctzung oder eine Datei, die nicht geladen werden konnte. " +
+      "DevTools (F12) \u2192 Konsole zeigt die genaue Meldung."
+    );
+  }, 8000);
+</script>
+
+<script>
   // stamped by tools/stamp_build.py — lets us tell which code is actually live
-  window.LH_BUILD = "va54b142 · 5221388";
+  window.LH_BUILD = "vc77f079 · 1c14dd4";
   const b = document.getElementById("load-build");
   if (b) b.textContent = window.LH_BUILD;
   const bi = document.getElementById("build-id");
@@ -144,10 +187,10 @@
 <script type="importmap">
 {
   "imports": {
-    "three": "./vendor/three.module.js?v=a54b142"
+    "three": "./vendor/three.module.js?v=c77f079"
   }
 }
 </script>
-<script type="module" src="src/main.js?v=a54b142"></script>
+<script type="module" src="src/main.js?v=c77f079"></script>
 </body>
 </html>

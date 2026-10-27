@@ -46,7 +46,7 @@ export class TouchControls {
 
   setEnabled(on) {
     this.enabled = on;
-    this.root.classList.toggle("hidden", !on);
+    if (this.root) this.root.classList.toggle("hidden", !on);
     document.body.classList.toggle("touch-mode", on);
     if (!on) {
       this.axis.x = this.axis.y = 0;
@@ -62,6 +62,7 @@ export class TouchControls {
 
   resetButtons() {
     for (const key of this.buttons.keys()) this.buttons.set(key, false);
+    if (!this.root || !this.root.querySelectorAll) return;
     for (const el of this.root.querySelectorAll("[data-btn]")) el.classList.remove("active");
   }
 

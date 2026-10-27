@@ -166,12 +166,29 @@ node test/physics.mjs       # Beschleunigung, Bremsen, Lenken, Drift, Kollision
 node test/smoke.mjs         # baut die komplette Welt mit Fake-DOM, simuliert 40 s Spiel
 node test/textures.mjs      # Texture-Loader: löst auf, überlebt Fehler, korrekte URLs
 node test/touch.mjs         # Touch-Steuerung: Deadzone, Achsen, Buttons, Look, Erkennung
+node test/bootstrap.mjs     # Startpfad: Storage-Fallback, Fehlerhandler vor dem Modul
+node test/boot-fatal.mjs    # echtes main.js ohne WebGL/Storage: Fehler wird sichtbar
 ```
 
 Der Smoke-Test lädt alle Module mit einem nachgebauten DOM/WebGL-Stub, baut
 Stadt, Szene, Figuren, Verkehr, Polizei und HUD und lässt 2400 Frames laufen —
 inklusive Fahr-Simulation. Er hat beim ersten Lauf zwei echte Bugs gefunden
 (Fassadentyp-Mapping zwischen Stadt und Renderer, HUD-Element-IDs).
+
+**Silent-Freeze-Schutz.** Zwei Ausfälle haben gezeigt, wie wichtig das ist:
+`localStorage` auf Modulebene wirft in einem sandboxed iframe eine
+`SecurityError` und tötet das Modul, bevor irgendetwas rendert — und ein
+Fehlerhandler am Dateiende registriert sich dann nie. Deshalb:
+
+- Speicherzugriffe laufen ausschließlich über `src/storage.js` (try/catch,
+  In-Memory-Fallback; ohne Storage funktionieren Einstellungen nur nicht mehr
+  persistent, das Spiel läuft weiter).
+- `index.html` bringt einen Inline-Handler **vor** dem Modul mit
+  (`window.__lhFatal`, `error`, `unhandledrejection`).
+- Ein Watchdog nach 8 s meldet, wenn das Modul gar nicht erst startet; das
+  Modul meldet sich mit `__lhMarkStarted()` an, sobald es läuft.
+- Die Renderer-Erzeugung ist gekapselt: fehlendes WebGL erzeugt eine lesbare
+  Meldung statt eines eingefrorenen Ladebalkens.
 
 Der Startbildschirm blockiert bewusst **nicht** auf das Laden der Texturen: die
 Stadt wird sofort mit prozeduralen Platzhalter-Texturen gebaut, die echten

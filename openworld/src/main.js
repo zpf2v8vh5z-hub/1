@@ -2,17 +2,20 @@
    three.js scene, city generation, third-person controller, vehicles,
    traffic, police pursuit, shooting and the HUD loop. */
 
+// first statement on purpose: cancels the inline boot watchdog in index.html
+window.__lhMarkStarted?.();
+
 import * as THREE from "three";
-import { generateCity, toWorld, CELL, ROAD_W, N_BLOCKS, BLOCK_S, WORLD_SIZE } from "./city.js?v=a54b142";
-import { loadWorldTextures, buildWorld, applyTextures, ALBEDO_NAMES } from "./world.js?v=a54b142";
-import { Player, angleDelta } from "./characters.js?v=a54b142";
-import { Vehicle, CAR_COLORS } from "./vehicle.js?v=a54b142";
-import { Traffic } from "./traffic.js?v=a54b142";
-import { Police } from "./police.js?v=a54b142";
-import { Effects } from "./effects.js?v=a54b142";
-import { GameAudio } from "./audio.js?v=a54b142";
-import { HUD } from "./hud.js?v=a54b142";
-import { pointBlocked } from "./physics.js?v=a54b142";
+import { generateCity, toWorld, CELL, ROAD_W, N_BLOCKS, BLOCK_S, WORLD_SIZE } from "./city.js?v=c77f079";
+import { loadWorldTextures, buildWorld, applyTextures, ALBEDO_NAMES } from "./world.js?v=c77f079";
+import { Player, angleDelta } from "./characters.js?v=c77f079";
+import { Vehicle, CAR_COLORS } from "./vehicle.js?v=c77f079";
+import { Traffic } from "./traffic.js?v=c77f079";
+import { Police } from "./police.js?v=c77f079";
+import { Effects } from "./effects.js?v=c77f079";
+import { GameAudio } from "./audio.js?v=c77f079";
+import { HUD } from "./hud.js?v=c77f079";
+import { pointBlocked } from "./physics.js?v=c77f079";
 
 // ------------------------------------------------------------------ DOM handles
 const canvas = document.getElementById("view");
@@ -24,11 +27,21 @@ const pauseEl = document.getElementById("pause");
 const deadEl = document.getElementById("dead");
 
 // -------------------------------------------------------------------- renderer
-const renderer = new THREE.WebGLRenderer({
-  canvas,
-  antialias: true,
-  powerPreference: "high-performance",
-});
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: true,
+    powerPreference: "high-performance",
+  });
+} catch (err) {
+  // No WebGL: explain it instead of leaving the player on a frozen loading bar
+  window.__lhFatal?.(
+    "WebGL konnte nicht initialisiert werden. Bitte Hardware-Beschleunigung im Browser aktivieren " +
+      "oder einen aktuellen Chrome/Firefox/Edge verwenden. (" + err.message + ")"
+  );
+  throw err;
+}
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
@@ -45,7 +58,6 @@ const effects = new Effects(scene);
 
 // --------------------------------------------------------------- touch setup
 const TOUCH_KEY = "lh.touch";
-const savedTouch = localStorage.getItem(TOUCH_KEY);
 const touch = new TouchControls({
   root: document.getElementById("touch-ui"),
   stick: document.getElementById("stick"),
@@ -64,7 +76,7 @@ const touch = new TouchControls({
 
 function setTouchEnabled(on, { silent = false } = {}) {
   touch.setEnabled(on);
-  localStorage.setItem(TOUCH_KEY, on ? "1" : "0");
+  saveSetting(TOUCH_KEY, on ? "1" : "0");
   for (const id of ["touch-enabled", "touch-enabled-pause"]) {
     const el = document.getElementById(id);
     if (el) el.checked = on;
@@ -822,6 +834,10 @@ async function boot() {
   updateCamera(1);
   renderer.render(scene, camera);
 
+  if (!storageAvailable()) {
+    console.warn("[storage] localStorage nicht verfügbar (sandboxed iframe?) — Einstellungen werden nicht gespeichert");
+  }
+
   loadTexturesInBackground();
 
   const play = () => {
@@ -836,6 +852,7 @@ async function boot() {
   document.getElementById("respawn").addEventListener("click", respawn);
 
   // --- touch toggle (auto-detect unless the player decided before)
+  const savedTouch = loadSetting(TOUCH_KEY, null);
   const initialTouch = savedTouch === null ? prefersTouch() : savedTouch === "1";
   setTouchEnabled(initialTouch, { silent: true });
   for (const id of ["touch-enabled", "touch-enabled-pause"]) {
@@ -882,9 +899,5 @@ window.addEventListener("unhandledrejection", (e) => {
 
 boot().catch((err) => {
   console.error(err);
-  loadText.innerHTML = `Fehler beim Laden: ${err.message}<br><br>
-    <span style="opacity:.65">Seite neu laden (Strg+Shift+R). Bleibt der Fehler, prüfe in den
-    DevTools (F12) den Tab „Netzwerk“, ob assets/tex/*.jpg und *.png mit 200 geladen werden.</span>`;
-  loadFill.style.width = "100%";
-  loadFill.style.background = "#ff5b4a";
+  window.__lhFatal(err.message, err.stack ? err.stack.split("\n")[1] : "");
 });
