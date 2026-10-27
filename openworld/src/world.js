@@ -2,7 +2,7 @@
    trees and street lamps. Merged/instanced geometry keeps draw calls low. */
 
 import * as THREE from "three";
-import { boxWithUV, planeWithUV, place, merge, mergeColored } from "./geo.js";
+import { boxWithUV, planeWithUV, place, merge, mergeColored } from "./geo.js?v=461031c";
 import {
   toWorld,
   BLOCK_S,
@@ -12,8 +12,8 @@ import {
   N_BLOCKS,
   SIDEWALK,
   collisionBoxes,
-} from "./city.js";
-import { buildColliderGrid } from "./physics.js";
+} from "./city.js?v=461031c";
+import { buildColliderGrid } from "./physics.js?v=461031c";
 
 const TEX_DIR = "assets/tex/";
 const ALBEDO = ["asphalt", "sidewalk", "facade-glass", "facade-concrete", "facade-brick", "grass"];
@@ -86,11 +86,62 @@ export async function loadWorldTextures(onProgress = () => {}) {
   return loadTextureSet(new THREE.TextureLoader(), onProgress);
 }
 
-function makeMaterials(tex) {
-  const std = (albedo, normal, extra = {}) =>
+/** Tiny procedural stand-in texture, used until the real files arrive.
+    This is what makes startup non-blocking: the city renders immediately. */
+function fallbackTexture(hex) {
+  const size = 128;
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const g = c.getContext("2d");
+  g.fillStyle = hex;
+  g.fillRect(0, 0, size, size);
+  try {
+    const img = g.getImageData(0, 0, size, size);
+    const d = img.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const n = (Math.random() - 0.5) * 26;
+      d[i] = Math.max(0, Math.min(255, d[i] + n));
+      d[i + 1] = Math.max(0, Math.min(255, d[i + 1] + n));
+      d[i + 2] = Math.max(0, Math.min(255, d[i + 2] + n));
+    }
+    g.putImageData(img, 0, 0);
+  } catch {
+    // getImageData can be unavailable in exotic contexts — flat colour is fine
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+const FALLBACK_COLORS = {
+  asphalt: "#3c3f45",
+  sidewalk: "#9a9a94",
+  grass: "#4e6b3c",
+  glass: "#2c3a4a",
+  concrete: "#8d8579",
+  brick: "#8a5a45",
+};
+
+/** Material key -> [albedo texture name, normal map texture name] */
+const MATERIAL_TEXTURES = {
+  asphalt: ["asphalt", "asphalt_n"],
+  sidewalk: ["sidewalk", "sidewalk_n"],
+  grass: ["grass", "grass_n"],
+  glass: ["facade-glass", "facade-glass_n"],
+  concrete: ["facade-concrete", "facade-concrete_n"],
+  brick: ["facade-brick", "facade-brick_n"],
+};
+
+function makeMaterials(tex = null) {
+  const has = (key) => !!(tex && tex[key]);
+  const albedo = (key, matKey) => (has(key) ? tex[key] : fallbackTexture(FALLBACK_COLORS[matKey]));
+  const normal = (key) => (has(key) ? tex[key] : null);
+
+  const std = (matKey, albedoKey, normalKey, extra = {}) =>
     new THREE.MeshStandardMaterial({
-      map: tex[albedo],
-      normalMap: tex[normal],
+      map: albedo(albedoKey, matKey),
+      normalMap: normal(normalKey),
       normalScale: new THREE.Vector2(0.8, 0.8),
       roughness: 0.9,
       metalness: 0,
@@ -98,31 +149,31 @@ function makeMaterials(tex) {
     });
 
   return {
-    asphalt: std("asphalt", "asphalt_n", { roughness: 0.82, color: 0xb9bcc0 }),
-    sidewalk: std("sidewalk", "sidewalk_n", { roughness: 0.88, color: 0xdadad4 }),
-    grass: std("grass", "grass_n", { roughness: 0.98, color: 0xa8c98a }),
-    glass: std("facade-glass", "facade-glass_n", {
+    asphalt: std("asphalt", "asphalt", "asphalt_n", { roughness: 0.82, color: 0xb9bcc0 }),
+    sidewalk: std("sidewalk", "sidewalk", "sidewalk_n", { roughness: 0.88, color: 0xdadad4 }),
+    grass: std("grass", "grass", "grass_n", { roughness: 0.98, color: 0xa8c98a }),
+    glass: std("glass", "facade-glass", "facade-glass_n", {
       roughness: 0.18,
       metalness: 0.55,
       vertexColors: true,
       emissive: new THREE.Color(0x6b5a3f),
-      emissiveMap: tex["facade-glass"],
+      emissiveMap: has("facade-glass") ? tex["facade-glass"] : null,
       emissiveIntensity: 0.85,
     }),
-    concrete: std("facade-concrete", "facade-concrete_n", {
+    concrete: std("concrete", "facade-concrete", "facade-concrete_n", {
       roughness: 0.86,
       metalness: 0.05,
       vertexColors: true,
       emissive: new THREE.Color(0x69563c),
-      emissiveMap: tex["facade-concrete"],
+      emissiveMap: has("facade-concrete") ? tex["facade-concrete"] : null,
       emissiveIntensity: 0.55,
     }),
-    brick: std("facade-brick", "facade-brick_n", {
+    brick: std("brick", "facade-brick", "facade-brick_n", {
       roughness: 0.92,
       metalness: 0.02,
       vertexColors: true,
       emissive: new THREE.Color(0x5e4a33),
-      emissiveMap: tex["facade-brick"],
+      emissiveMap: has("facade-brick") ? tex["facade-brick"] : null,
       emissiveIntensity: 0.5,
     }),
     roof: new THREE.MeshStandardMaterial({ color: 0x2b2e33, roughness: 0.95, metalness: 0.1 }),
@@ -131,6 +182,29 @@ function makeMaterials(tex) {
     marking: new THREE.MeshStandardMaterial({ color: 0xc9cfc6, roughness: 0.75 }),
     lampGlow: new THREE.MeshBasicMaterial({ color: 0xffd7a0 }),
   };
+}
+
+/** Patch real textures into already-built materials (hot-swap after load). */
+export function applyTextures(materials, tex) {
+  if (!tex) return 0;
+  let patched = 0;
+  for (const [matKey, [albedoName, normalName]] of Object.entries(MATERIAL_TEXTURES)) {
+    const mat = materials[matKey];
+    if (!mat) continue;
+    const albedo = tex[albedoName];
+    const normalMap = tex[normalName];
+    if (albedo) {
+      mat.map = albedo;
+      if (mat.emissiveIntensity > 0 && mat.emissive) mat.emissiveMap = albedo;
+      patched++;
+    }
+    if (normalMap) {
+      mat.normalMap = normalMap;
+      mat.normalScale = new THREE.Vector2(0.8, 0.8);
+    }
+    mat.needsUpdate = true;
+  }
+  return patched;
 }
 
 // -------------------------------------------------------------------------- sky

@@ -58,9 +58,11 @@
 <div id="loading" class="overlay">
   <div class="panel">
     <div class="brand">LIBERTY<span>HEIGHTS</span></div>
+    <div class="build-badge" id="load-build">vd9cbe2a · 5b5a0e7</div>
     <p class="tag">Open-World-Sandbox · three.js · KI-Texturen</p>
     <div class="loader"><i id="load-fill"></i></div>
     <p id="load-text" class="load-text">Stadt wird generiert …</p>
+    <p id="tex-status" class="tex-status" data-state="loading">Texturen werden geladen …</p>
   </div>
 </div>
 
@@ -79,6 +81,8 @@
       <div><kbd>F</kbd><em>Ein-/Aussteigen</em><kbd>R</kbd><em>Nachladen</em></div>
       <div><kbd>H</kbd><em>Hupe</em><kbd>M</kbd><em>Ton aus</em><kbd>Esc</kbd><em>Pause</em></div>
     </div>
+
+    <p id="build-id" class="build-line">vd9cbe2a · 5b5a0e7 · <button id="diagnose" class="link-btn" type="button">Diagnose</button></p>
 
     <p class="note">Tipp: Jedes Fahrzeug in der Stadt gehört dir, wenn du es erreichen kannst. Je mehr Aufmerksamkeit du erregst, desto mehr Sterne — und desto mehr Polizei.</p>
     <button id="play">Stadt betreten</button>
@@ -104,13 +108,24 @@
   </div>
 </div>
 
+<div id="fatal" class="fatal hidden"></div>
+
+<script>
+  // stamped by tools/stamp_build.py — lets us tell which code is actually live
+  window.LH_BUILD = "v461031c · 5b5a0e7";
+  const b = document.getElementById("load-build");
+  if (b) b.textContent = window.LH_BUILD;
+  const bi = document.getElementById("build-id");
+  if (bi) bi.innerHTML = window.LH_BUILD + ' · <button id="diagnose" class="link-btn" type="button">Diagnose</button>';
+</script>
+
 <script type="importmap">
 {
   "imports": {
-    "three": "./vendor/three.module.js"
+    "three": "./vendor/three.module.js?v=d9cbe2a"
   }
 }
 </script>
-<script type="module" src="src/main.js"></script>
+<script type="module" src="src/main.js?v=d9cbe2a"></script>
 </body>
 </html>

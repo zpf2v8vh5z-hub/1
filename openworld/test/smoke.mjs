@@ -148,7 +148,7 @@ const fail = (msg) => { console.error("FAIL:", msg); failures++; };
 
 const THREE = await import("three");
 const { generateCity, toWorld } = await import("../src/city.js");
-const { buildWorld } = await import("../src/world.js");
+const { buildWorld, applyTextures } = await import("../src/world.js");
 const { Player } = await import("../src/characters.js");
 const { Vehicle } = await import("../src/vehicle.js");
 const { Traffic } = await import("../src/traffic.js");
@@ -177,7 +177,26 @@ console.log("building city …");
 const city = generateCity(424242);
 console.log(`  ${city.buildings.length} buildings, ${city.trees.length} trees, ${city.lamps.length} lamps`);
 
-console.log("building world …");
+console.log("building world (placeholder path, null textures) …");
+const placeholderWorld = buildWorld(new THREE.Scene(), city, null);
+if (!placeholderWorld.materials || !placeholderWorld.materials.asphalt) fail("placeholder materials missing");
+for (const key of ["asphalt", "sidewalk", "grass", "glass", "concrete", "brick"]) {
+  const m = placeholderWorld.materials[key];
+  if (!m) { fail(`placeholder material ${key} missing`); continue; }
+  if (!m.map) fail(`placeholder material ${key} has no fallback map`);
+  if (m.normalMap) fail(`placeholder material ${key} should not have a normal map`);
+}
+console.log("  city renders without any loaded texture");
+
+// hot-swap real textures into the already-built materials
+const patched = applyTextures(placeholderWorld.materials, fakeTextureSet());
+if (patched !== 6) fail(`applyTextures patched ${patched} materials, expected 6`);
+if (!placeholderWorld.materials.asphalt.map) fail("asphalt map not patched");
+if (!placeholderWorld.materials.asphalt.normalMap) fail("asphalt normal map not patched");
+if (!placeholderWorld.materials.glass.emissiveMap) fail("facade emissive map not patched");
+console.log(`  texture hot-swap patched ${patched}/6 materials`);
+
+console.log("building world (with textures) …");
 const world = buildWorld(scene, city, fakeTextureSet());
 if (!world.grid || world.grid.boxes.length !== city.buildings.length) fail("collider grid mismatch");
 console.log(`  scene children: ${scene.children.length}`);

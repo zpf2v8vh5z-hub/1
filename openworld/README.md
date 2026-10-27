@@ -14,9 +14,20 @@ Story, keine Missionen, keine Animation-Rigs, keine Konsolen-Performance.
 
 ```bash
 cd openworld
-python3 -m http.server 8081 --bind 0.0.0.0
+python3 serve.py 8081
 # http://localhost:8081
 ```
+
+**Benutze `serve.py`, nicht `python -m http.server`.** Der eingebaute Server
+schickt keine Cache-Header, Browser bedienen sich dann aus dem Cache — bis hin
+zum `304`, bei dem eine Code-Änderung die Seite nie erreicht. `serve.py` setzt
+`Cache-Control: no-store` und ignoriert bedingte Requests, jede Aktualisierung
+kommt also an. Alternativ: einmal hart neu laden (`Strg+Shift+R`).
+
+Die im Menü angezeigte Build-Kennung (`v461031c · 5b5a0e7`) sagt dir, welcher
+Code wirklich läuft. Sie wird von `tools/stamp_build.py` in `index.html` und in
+alle relativen Modul-Imports geschrieben (Cache-Busting). Nach Änderungen an
+`src/` einmal `python3 tools/stamp_build.py` ausführen.
 
 Braucht einen Browser mit WebGL 2 und ES-Modulen (Chrome, Edge, Firefox, Safari 16+).
 Kein Build-Schritt, kein npm install — three.js liegt als einzelne Datei in `vendor/`.
@@ -144,6 +155,14 @@ Der Smoke-Test lädt alle Module mit einem nachgebauten DOM/WebGL-Stub, baut
 Stadt, Szene, Figuren, Verkehr, Polizei und HUD und lässt 2400 Frames laufen —
 inklusive Fahr-Simulation. Er hat beim ersten Lauf zwei echte Bugs gefunden
 (Fassadentyp-Mapping zwischen Stadt und Renderer, HUD-Element-IDs).
+
+Der Startbildschirm blockiert bewusst **nicht** auf das Laden der Texturen: die
+Stadt wird sofort mit prozeduralen Platzhalter-Texturen gebaut, die echten
+Texturen werden im Hintergrund nachgeladen und per `applyTextures()` in die
+bereits existierenden Materialien getauscht. Ein hängender oder fehlender
+Asset-Request kann den Start also nicht mehr verhindern — er kostet höchstens
+Detailgrad. Der Status steht live unter dem Startmenü, „Diagnose" zeigt
+Build, WebGL-Version und Szenen-Inhalte.
 
 `test/textures.mjs` deckt den Texture-Loader separat ab, weil der Smoke-Test
 fertige Texturen einspeist und diesen Pfad deshalb nicht berührt. Anlass war ein

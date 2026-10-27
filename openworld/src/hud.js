@@ -1,6 +1,6 @@
 /* DOM + canvas HUD: minimap, health, wanted stars, ammo, speedometer. */
 
-import { WORLD_SIZE, BLOCK_S } from "./city.js";
+import { WORLD_SIZE, BLOCK_S } from "./city.js?v=461031c";
 
 const MAP_PPM = 2;
 const MM_SIZE = 200;

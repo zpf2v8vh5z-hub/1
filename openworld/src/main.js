@@ -3,16 +3,16 @@
    traffic, police pursuit, shooting and the HUD loop. */
 
 import * as THREE from "three";
-import { generateCity, toWorld, CELL, ROAD_W, N_BLOCKS, BLOCK_S, WORLD_SIZE } from "./city.js";
-import { loadWorldTextures, buildWorld } from "./world.js";
-import { Player, angleDelta } from "./characters.js";
-import { Vehicle, CAR_COLORS } from "./vehicle.js";
-import { Traffic } from "./traffic.js";
-import { Police } from "./police.js";
-import { Effects } from "./effects.js";
-import { GameAudio } from "./audio.js";
-import { HUD } from "./hud.js";
-import { pointBlocked } from "./physics.js";
+import { generateCity, toWorld, CELL, ROAD_W, N_BLOCKS, BLOCK_S, WORLD_SIZE } from "./city.js?v=461031c";
+import { loadWorldTextures, buildWorld, applyTextures, ALBEDO_NAMES } from "./world.js?v=461031c";
+import { Player, angleDelta } from "./characters.js?v=461031c";
+import { Vehicle, CAR_COLORS } from "./vehicle.js?v=461031c";
+import { Traffic } from "./traffic.js?v=461031c";
+import { Police } from "./police.js?v=461031c";
+import { Effects } from "./effects.js?v=461031c";
+import { GameAudio } from "./audio.js?v=461031c";
+import { HUD } from "./hud.js?v=461031c";
+import { pointBlocked } from "./physics.js?v=461031c";
 
 // ------------------------------------------------------------------ DOM handles
 const canvas = document.getElementById("view");
@@ -663,34 +663,50 @@ function animate() {
 }
 
 // ----------------------------------------------------------------------- boot
-async function boot() {
-  loadText.textContent = "Texturen werden geladen … 0/12";
+/** Loading is deliberately NOT a gate: the city renders with procedural
+    placeholder textures straight away, real textures are patched in later.
+    An asset problem can therefore never block the start screen again. */
+const TEX_TOTAL = ALBEDO_NAMES.length * 2;
 
-  // A watchdog keeps a stuck asset request from freezing the loading screen
-  // forever — the player gets a readable error instead of an endless bar.
-  const withTimeout = (promise, ms, label) =>
-    Promise.race([
-      promise,
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error(`${label} dauert länger als ${Math.round(ms / 1000)} s`)), ms)
-      ),
-    ]);
+function setTexStatus(text, state = "loading") {
+  const el = document.getElementById("tex-status");
+  if (!el) return;
+  el.textContent = text;
+  el.dataset.state = state;
+}
 
-  const tex = await withTimeout(
-    loadWorldTextures((p, done, total) => {
+function loadTexturesInBackground() {
+  const started = performance.now();
+  loadWorldTextures((p, done, total) => {
+    setTexStatus(`Texturen werden nachgeladen … ${done}/${total}`, "loading");
+    if (loadingEl && !loadingEl.classList.contains("hidden")) {
       loadFill.style.width = `${Math.round(p * 100)}%`;
       loadText.textContent = `Texturen werden geladen … ${done}/${total}`;
-    }),
-    20000,
-    "Das Laden der Texturen"
-  );
+    }
+  })
+    .then((tex) => {
+      const n = applyTextures(G.world.materials, tex);
+      const secs = ((performance.now() - started) / 1000).toFixed(1);
+      setTexStatus(`Texturen bereit · ${n}/6 Materialien · ${secs} s`, "ready");
+      console.info(`[textures] ${TEX_TOTAL} Dateien geladen, ${n} Materialien aktualisiert`);
+    })
+    .catch((err) => {
+      console.warn("[textures] Laden fehlgeschlagen, Platzhalter bleiben aktiv", err);
+      setTexStatus(`Texturen fehlgeschlagen: ${err.message} — Spiel läuft mit Platzhaltern`, "error");
+    });
+}
 
+async function boot() {
   loadText.textContent = "Stadt wird gebaut …";
-  loadFill.style.width = "100%";
+  loadFill.style.width = "25%";
+  setTexStatus("Texturen werden geladen …");
 
   const city = generateCity((Math.random() * 1e9) | 0);
   G.city = city;
-  G.world = buildWorld(scene, city, tex);
+
+  // pass null -> procedural placeholder textures, no network needed
+  G.world = buildWorld(scene, city, null);
+  loadFill.style.width = "70%";
 
   G.player = new Player(scene);
   G.player.setPosition(city.spawn.x, city.spawn.z);
@@ -710,22 +726,59 @@ async function boot() {
   G.hud.setAmmo(G.weapon.mag, G.weapon.reserve, false);
   G.hud.setWanted(0);
 
+  loadFill.style.width = "100%";
   loadingEl.classList.add("hidden");
   startEl.classList.remove("hidden");
   G.mode = "menu";
 
-  document.getElementById("play").addEventListener("click", () => {
+  // render one frame right away so the city is visible behind the menu
+  updateCamera(1);
+  renderer.render(scene, camera);
+
+  loadTexturesInBackground();
+
+  const play = () => {
     audio.init();
     startEl.classList.add("hidden");
     G.hud.show();
     G.mode = "playing";
     canvas.requestPointerLock();
-  });
+  };
+  document.getElementById("play").addEventListener("click", play);
   document.getElementById("resume").addEventListener("click", resume);
   document.getElementById("respawn").addEventListener("click", respawn);
 
+  const diag = document.getElementById("diagnose");
+  if (diag) {
+    diag.addEventListener("click", () => {
+      const lines = [
+        `Build: ${window.LH_BUILD || "?"}`,
+        `Texturen: ${document.getElementById("tex-status").textContent}`,
+        `Fahrzeuge: ${G.parked.length} · Verkehr: ${G.traffic.cars.length} · Passanten: ${G.traffic.peds.length}`,
+        `Gebäude: ${city.buildings.length}`,
+        `WebGL: ${renderer.capabilities.isWebGL2 ? "2" : "1"} · ${renderer.getContext().getParameter(renderer.getContext().VERSION)}`,
+        `Bildschirm: ${window.innerWidth}×${window.innerHeight} @ ${window.devicePixelRatio}x`,
+      ];
+      alert(lines.join("\n"));
+    });
+  }
+
   animate();
 }
+
+// surface any uncaught error instead of dying silently
+window.addEventListener("error", (e) => {
+  const box = document.getElementById("fatal");
+  if (!box) return;
+  box.classList.remove("hidden");
+  box.textContent = `Fehler: ${e.message} (${e.filename}:${e.lineno})`;
+});
+window.addEventListener("unhandledrejection", (e) => {
+  const box = document.getElementById("fatal");
+  if (!box) return;
+  box.classList.remove("hidden");
+  box.textContent = `Fehler: ${e.reason && e.reason.message ? e.reason.message : e.reason}`;
+});
 
 boot().catch((err) => {
   console.error(err);
