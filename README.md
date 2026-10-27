@@ -25,6 +25,9 @@ npm run build && npm run preview   # http://localhost:4173
 Quality switch: `?q=low` (disables shadow maps, smaller reflection target),
 `?refl=off` (turns the planar road reflection off, useful on weak GPUs).
 
+HMR is disabled by default because the hosted preview proxies the dev server
+through its own https host; use `VITE_HMR=on npm run dev` when working locally.
+
 ## Controls
 
 | key | action |
@@ -93,7 +96,26 @@ npm run build && npm run preview     # in one shell
 LD_LIBRARY_PATH=/path/to/chromium/libs node tools/screenshot.mjs
 ```
 
-Results are written to `screenshots/` (`01-hero` … `06-rear-close`).
+Results are written to `screenshots/`:
+
+| shot | what it checks |
+| --- | --- |
+| `01-hero.png` | the reference composition, HUD off |
+| `02-hud-drive.png` | third-person chase cam + minimap/speedometer |
+| `03-low-angle.png` | road-level reflections and light pools |
+| `04-photo-aerial.png` | the whole boulevard, beach and skyline |
+| `05-hotel-side.png` | facade textures and neon at close range |
+| `06-rear-close.png` | car paint, tail lights, wheel detail |
+| `07-reference-style.png` | the money shot: reference framing with the in-game HUD |
+
+The same run also asserts that the car actually drives and steers, that photo
+mode toggles and that the screenshot API returns a PNG.
+
+### Known limitations
+
+* Traffic cars are low-poly stand-ins and pass through everything (no collision).
+* Reflections are only planar on the road; puddles elsewhere use an env map.
+* No story, no missions, no AI NPCs — this is a scene/cinematic playground.
 
 ## Browser hooks (`window.__vice`)
 
