@@ -6,16 +6,19 @@
 window.__lhMarkStarted?.();
 
 import * as THREE from "three";
-import { generateCity, toWorld, CELL, ROAD_W, N_BLOCKS, BLOCK_S, WORLD_SIZE } from "./city.js?v=c77f079";
-import { loadWorldTextures, buildWorld, applyTextures, ALBEDO_NAMES } from "./world.js?v=c77f079";
-import { Player, angleDelta } from "./characters.js?v=c77f079";
-import { Vehicle, CAR_COLORS } from "./vehicle.js?v=c77f079";
-import { Traffic } from "./traffic.js?v=c77f079";
-import { Police } from "./police.js?v=c77f079";
-import { Effects } from "./effects.js?v=c77f079";
-import { GameAudio } from "./audio.js?v=c77f079";
-import { HUD } from "./hud.js?v=c77f079";
-import { pointBlocked } from "./physics.js?v=c77f079";
+import { generateCity, toWorld, CELL, ROAD_W, N_BLOCKS, BLOCK_S, WORLD_SIZE } from "./city.js?v=1250b65";
+import { loadWorldTextures, buildWorld, applyTextures, ALBEDO_NAMES } from "./world.js?v=1250b65";
+import { Player, angleDelta } from "./characters.js?v=1250b65";
+import { Vehicle, CAR_COLORS } from "./vehicle.js?v=1250b65";
+import { Traffic } from "./traffic.js?v=1250b65";
+import { Police } from "./police.js?v=1250b65";
+import { Effects } from "./effects.js?v=1250b65";
+import { GameAudio } from "./audio.js?v=1250b65";
+import { HUD } from "./hud.js?v=1250b65";
+import { pointBlocked } from "./physics.js?v=1250b65";
+import { TouchControls, prefersTouch } from "./touch.js?v=1250b65";
+import { auditMaterials, formatAudit } from "./audit.js?v=1250b65";
+import { loadSetting, saveSetting, storageAvailable } from "./storage.js?v=1250b65";
 
 // ------------------------------------------------------------------ DOM handles
 const canvas = document.getElementById("view");

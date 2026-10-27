@@ -168,12 +168,25 @@ node test/textures.mjs      # Texture-Loader: löst auf, überlebt Fehler, korre
 node test/touch.mjs         # Touch-Steuerung: Deadzone, Achsen, Buttons, Look, Erkennung
 node test/bootstrap.mjs     # Startpfad: Storage-Fallback, Fehlerhandler vor dem Modul
 node test/boot-fatal.mjs    # echtes main.js ohne WebGL/Storage: Fehler wird sichtbar
+node --import ./test/register-three-stub.mjs test/boot-success.mjs
+                            # echtes main.js bootet bis zum Startmenü
+
+./test/all.sh               # alles auf einmal (empfohlen)
 ```
 
 Der Smoke-Test lädt alle Module mit einem nachgebauten DOM/WebGL-Stub, baut
 Stadt, Szene, Figuren, Verkehr, Polizei und HUD und lässt 2400 Frames laufen —
 inklusive Fahr-Simulation. Er hat beim ersten Lauf zwei echte Bugs gefunden
 (Fassadentyp-Mapping zwischen Stadt und Renderer, HUD-Element-IDs).
+
+**Der Boot-Test ist der wichtigste.** `main.js` ist das einzige Modul, das keine
+Testdatei importiert — genau dort lebte ein Fehler, den Syntaxprüfung und alle
+anderen Suiten übersahen: benutzte Namen (`TouchControls`, `auditMaterials`,
+`loadSetting`) ohne passende `import`-Zeile. Das ist syntaktisch gültig und wirft
+erst zur Laufzeit `ReferenceError`. `test/boot-success.mjs` führt das echte
+`main.js` mit einem Renderer-Stub (`test/stubs/three-boot.mjs`, echtes three.js,
+nur `WebGLRenderer` ersetzt) bis zum Startmenü aus und schlägt bei jedem
+unauflösbaren Namen fehl.
 
 **Silent-Freeze-Schutz.** Zwei Ausfälle haben gezeigt, wie wichtig das ist:
 `localStorage` auf Modulebene wirft in einem sandboxed iframe eine
