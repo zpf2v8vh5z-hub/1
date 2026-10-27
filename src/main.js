@@ -5,6 +5,10 @@ import { buildWorld, makeRng } from './world.js';
 import { loadPlayerCar } from './car.js';
 import { createPostFX } from './postfx.js';
 import { Hud } from './hud.js';
+import { LAYOUT } from './world.js';
+import {
+  settings, loadSettings, saveSettings, resetSettings, buildSettingsMenu,
+} from './settings.js';
 
 const params = new URLSearchParams(location.search);
 const QUALITY = params.get('q') === 'low' ? 'low' : 'high';
@@ -14,6 +18,10 @@ const SUN_DIR = new THREE.Vector3(-0.46, 0.105, 1).normalize();
 // shadows keep sane lengths instead of stretching 100 m across the beach
 const SHADOW_DIR = new THREE.Vector3(-0.5, 0.62, 1).normalize();
 
+// steering: rad/s at full lock, low speed, sensitivity 1.0. Divided down by speed
+// (grip) and multiplied by the player's sensitivity setting.
+const TURN_RATE = 1.55;
+
 const loaderEl = document.getElementById('loader');
 const barEl = document.getElementById('bar-fill');
 const statusEl = document.getElementById('loader-status');
@@ -21,6 +29,12 @@ const hudEl = document.getElementById('hud');
 const photoEl = document.getElementById('photo-ui');
 const toastEl = document.getElementById('toast');
 const fpsEl = document.getElementById('fps');
+const menuEl = document.getElementById('menu');
+const menuSettingsEl = document.getElementById('menu-settings');
+const menuResumeEl = document.getElementById('menu-resume');
+const menuResetEl = document.getElementById('menu-reset');
+
+loadSettings();
 
 const setProgress = (p, label) => {
   barEl.style.width = `${Math.round(p * 100)}%`;
@@ -96,6 +110,7 @@ const state = {
   phase: 'loading',
   photo: false,
   heroLock: false,
+  paused: false,
   keys: Object.create(null),
   shotIndex: 0,
 };
@@ -146,7 +161,7 @@ async function init() {
   state.phase = 'drive';
   loaderEl.classList.add('hidden');
   setTimeout(() => { loaderEl.style.display = 'none'; }, 950);
-  setTimeout(() => { if (!params.get('nohud')) hudEl.classList.remove('hidden'); }, 400);
+  setTimeout(() => applySettings(['hud']), 400);
 
   window.__vice = {
     ready: true,
@@ -160,7 +175,14 @@ async function init() {
     },
     freeCamera: () => { state.heroLock = false; },
     photoMode: (on) => setPhotoMode(!!on),
-    hud: (on) => { hudEl.classList.toggle('hidden', !on); hudEl.style.display = on ? '' : 'none'; },
+    settings,
+    applySettings,
+    menu: (on) => openMenu(!!on),
+    setupMenu,
+    hud: (on) => {
+      hudEl.classList.toggle('hidden', !on);
+      hudEl.style.display = on ? '' : 'none';
+    },
     placeCar: (x, z, yaw = 0) => {
       player.position.set(x, 0, z);
       player.yaw = yaw;
@@ -172,6 +194,9 @@ async function init() {
     },
   };
 
+  setupMenu();
+  applySettings();
+
   window.addEventListener('resize', onResize);
   requestAnimationFrame(loop);
 }
@@ -180,9 +205,21 @@ async function init() {
 /* input                                                             */
 /* ---------------------------------------------------------------- */
 window.addEventListener('keydown', (e) => {
+  if (e.code === 'Escape') {
+    e.preventDefault();
+    if (state.ready) openMenu(!state.paused);
+    return;
+  }
+  if (state.paused) return;          // the menu owns the keyboard while open
+
   state.keys[e.code] = true;
   if (e.code === 'KeyP' && state.ready) setPhotoMode(!state.photo);
-  if (e.code === 'KeyH') hudEl.classList.toggle('hidden');
+  if (e.code === 'KeyH') {
+    settings.hud = !settings.hud;
+    applySettings(['hud']);
+    saveSettings();
+    menuUi?.refresh();
+  }
   if (e.code === 'Enter') { e.preventDefault(); captureShot(); }
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
 });
@@ -198,14 +235,57 @@ canvas.addEventListener('pointerdown', (e) => {
 });
 canvas.addEventListener('pointerup', () => { look.dragging = false; });
 canvas.addEventListener('pointermove', (e) => {
-  if (!state.photo || !look.dragging) return;
-  look.yaw -= (e.clientX - look.lastX) * 0.0032;
-  look.pitch = THREE.MathUtils.clamp(look.pitch - (e.clientY - look.lastY) * 0.0028, -1.2, 1.2);
+  if (!state.photo || !look.dragging || state.paused) return;
+  look.yaw -= (e.clientX - look.lastX) * 0.0032 * settings.camSensitivity;
+  look.pitch = THREE.MathUtils.clamp(look.pitch - (e.clientY - look.lastY) * 0.0028 * settings.camSensitivity, -1.2, 1.2);
   look.lastX = e.clientX; look.lastY = e.clientY;
   state.heroLock = true;
 });
 
 /* ---------------------------------------------------------------- */
+/* settings + pause menu                                             */
+/* ---------------------------------------------------------------- */
+let menuUi = null;
+
+function applySettings(keys = null) {
+  const wants = (k) => !keys || keys.includes(k);
+
+  if (wants('hud')) {
+    const on = settings.hud && !params.get('nohud');
+    hudEl.classList.toggle('hidden', !on);
+    hudEl.style.display = on ? '' : 'none';
+  }
+  if (postfx) {
+    if (wants('bloom')) postfx.bloom.enabled = settings.bloom;
+    if (wants('grain')) postfx.setGrain(settings.grain ? 0.055 : 0);
+  }
+}
+
+function openMenu(on) {
+  state.paused = on;
+  menuEl.classList.toggle('open', on);
+  menuEl.setAttribute('aria-hidden', String(!on));
+  if (on) {
+    // release held keys so the car does not launch when the player resumes
+    for (const code of Object.keys(state.keys)) state.keys[code] = false;
+  }
+  menuUi?.refresh();
+}
+
+function setupMenu() {
+  menuUi = buildSettingsMenu(menuSettingsEl, (key, value) => {
+    applySettings([key]);
+    saveSettings();
+  });
+  menuResumeEl.addEventListener('click', () => openMenu(false));
+  menuResetEl.addEventListener('click', () => {
+    resetSettings();
+    menuUi.refresh();
+    applySettings();
+    toast('EINSTELLUNGEN ZURÜCKGESETZT');
+  });
+}
+
 function setPhotoMode(on) {
   state.photo = on;
   photoEl.classList.toggle('active', on);
@@ -274,16 +354,23 @@ function step(dt) {
   player.speed = THREE.MathUtils.clamp(player.speed, -9, maxSpeed);
   if (Math.abs(player.speed) < 0.05) player.speed = 0;
 
-  player.steer += (steerIn - player.steer) * Math.min(1, dt * 7);
-  const grip = 1 / (1 + Math.abs(player.speed) * 0.02);
-  player.yaw += player.steer * player.speed * 0.045 * grip * dt * 6;
+  // Steering: the input ramps in/out instead of snapping to full lock, so a short
+  // tap only nudges the nose. The yaw rate is speed dependent (grip) and scaled by
+  // the sensitivity setting from the ESC menu.
+  player.steer += (steerIn - player.steer) * (1 - Math.exp(-6 * dt));
+
+  const speedAbs = Math.abs(player.speed);
+  const speedFactor = THREE.MathUtils.clamp(speedAbs / 5, 0, 1);   // no pirouettes at a standstill
+  const grip = 1 / (1 + speedAbs * 0.03);
+  const yawRate = player.steer * speedFactor * grip * TURN_RATE * settings.steerSensitivity;
+  player.yaw += yawRate * Math.sign(player.speed || 1) * dt;
 
   const dir = new THREE.Vector3(Math.sin(player.yaw), 0, Math.cos(player.yaw));
   player.position.addScaledVector(dir, player.speed * dt);
 
   // stay on the boulevard
   player.position.x = THREE.MathUtils.clamp(player.position.x, -12.9, 13.2);
-  player.position.z = THREE.MathUtils.clamp(player.position.z, -100, 1180);
+  player.position.z = THREE.MathUtils.clamp(player.position.z, -100, LAYOUT.driveEnd);
 
   return dir;
 }
@@ -349,11 +436,11 @@ function loop() {
 }
 
 function frame(dt) {
-  if (state.ready) {
+  if (state.ready && !state.paused) {
     const dir = step(dt);
     playerSync(carGroup, player, car, dt);
     updateCamera(dt, dir);
-    world.update(dt);
+    world.update(dt, undefined, player.position);
     sky.update(dt, camera);
 
     // keep the shadow frustum around the action

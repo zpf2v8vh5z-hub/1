@@ -119,6 +119,21 @@ await shot('07-reference-style', () => {
   window.__vice.tick(1 / 60, 30);
 });
 
+// ---- the stretches affected by the skyline bug ------------------------------
+await shot('08-mid-boulevard', () => {
+  // purple skyline towers used to stand right here, in the middle of the road
+  window.__vice.hud(false);
+  window.__vice.placeCar(-0.2, 600, 0);
+  window.__vice.setHeroView();
+  window.__vice.tick(1 / 60, 30);
+});
+
+await shot('09-end-of-boulevard', () => {
+  window.__vice.placeCar(-0.2, 1600, 0);
+  window.__vice.setHeroView();
+  window.__vice.tick(1 / 60, 30);
+});
+
 // ---- functional tests -------------------------------------------------------
 // The software renderer only manages a few frames per second, so the driving
 // checks use the deterministic simulation tick instead of wall-clock time.
@@ -141,15 +156,93 @@ if (!keySeen || drive.z < 25 || drive.speed < 5) {
   process.exit(3);
 }
 
-await key('keydown', 'KeyA');
-const steer = await page.evaluate(() => {
-  window.__vice.tick(1 / 60, 90);
-  return window.__vice.player.yaw;
-});
-await key('keyup', 'KeyA');
 await key('keyup', 'KeyW');
-console.log(`→ steer test: yaw ${steer.toFixed(2)} rad`);
-if (Math.abs(steer) < 0.05) { console.error('✗ car did not steer'); process.exit(3); }
+
+// steering feel: a short tap must only nudge the nose, and the ESC-menu
+// sensitivity setting must scale the yaw rate
+const steer = await page.evaluate(() => {
+  const V = window.__vice;
+  const run = (holdFrames, sens) => {
+    V.settings.steerSensitivity = sens;
+    V.placeCar(0, 400, 0);
+    V.player.speed = 20;
+    V.state.keys.KeyA = true;
+    V.tick(1 / 60, holdFrames);
+    V.state.keys.KeyA = false;
+    return Math.abs(V.player.yaw) * 180 / Math.PI;
+  };
+  const tap = run(6, 0.75);
+  const held = run(60, 0.75);
+  const slow = run(60, 0.25);
+  const fast = run(60, 2);
+  V.settings.steerSensitivity = 0.75;
+  V.placeCar(0, 20, 0);
+  return { tap, held, slow, fast };
+});
+console.log(`→ steering @20 m/s — tap 100 ms: ${steer.tap.toFixed(1)}° · hold 1 s: ${steer.held.toFixed(1)}° (setting 25 %: ${steer.slow.toFixed(1)}°, 200 %: ${steer.fast.toFixed(1)}°)`);
+if (!(steer.tap > 0.2 && steer.tap < 5)) { console.error('✗ a short tap still over-rotates the car'); process.exit(3); }
+if (!(steer.held > 15 && steer.held < 90)) { console.error('✗ unexpected steering rate'); process.exit(3); }
+if (!(steer.slow < steer.held && steer.held < steer.fast)) { console.error('✗ sensitivity setting has no effect'); process.exit(3); }
+
+// ---- skyline regression: nothing big may stand on the roadway ----
+const onRoad = await page.evaluate(() => {
+  const V = window.__vice, out = [];
+  // a tower that leaked onto the street is: ground based, tall, and its footprint
+  // overlaps the roadway. Palms/lamps are shorter, the car is lower.
+  V.scene.traverse((o) => {
+    if (!o.isMesh || o.name === 'skyline') return;
+    if (o.material?.isShaderMaterial) return;   // sky dome, ocean and road shell
+    if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+    const bb = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld);
+    const height = bb.max.y - bb.min.y;
+    const touchesRoad = bb.max.x > -9 && bb.min.x < 9 && bb.max.z > -120 && bb.min.z < 2200;
+    if (height > 22 && bb.min.y < 3 && touchesRoad) {
+      out.push(`${o.name || o.geometry.type} h${height.toFixed(0)} x[${bb.min.x.toFixed(0)},${bb.max.x.toFixed(0)}] z[${bb.min.z.toFixed(0)},${bb.max.z.toFixed(0)}]`);
+    }
+  });
+  return out;
+});
+console.log(`→ objects on the roadway / in the sea: ${onRoad.length ? onRoad.join(', ') : 'none'}`);
+if (onRoad.length) { console.error('✗ scenery is blocking the boulevard'); process.exit(3); }
+
+// ---- ESC menu: opens, freezes, resumes, persists ----
+await page.evaluate(() => { window.__vice.placeCar(0, 300, 0); window.__vice.player.speed = 18; });
+await page.keyboard.press('Escape');
+await page.evaluate(async () => { await new Promise(r => setTimeout(r, 600)); });
+const menuOpen = await page.evaluate(() => ({
+  paused: window.__vice.state.paused,
+  open: document.getElementById('menu').classList.contains('open'),
+  rows: document.querySelectorAll('#menu-settings .setting').length,
+  moved: Math.abs(window.__vice.player.position.z - 300),
+}));
+console.log(`→ ESC menu: open=${menuOpen.open} paused=${menuOpen.paused} rows=${menuOpen.rows} car moved while paused=${menuOpen.moved.toFixed(2)} m`);
+if (!menuOpen.open || !menuOpen.paused || menuOpen.rows < 3) { console.error('✗ menu did not open'); process.exit(3); }
+if (menuOpen.moved > 0.001) { console.error('✗ game kept running while paused'); process.exit(3); }
+
+await shot('10-settings-menu', () => {});
+
+const persisted = await page.evaluate(() => {
+  const el = document.getElementById('set-steerSensitivity');
+  el.value = '1.2';
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+  return {
+    live: window.__vice.settings.steerSensitivity,
+    stored: JSON.parse(localStorage.getItem('vice306.settings.v1')).steerSensitivity,
+    label: document.querySelector('[data-key="steerSensitivity"] .setting-value').textContent,
+  };
+});
+console.log(`→ sensitivity slider: ${persisted.label} (live ${persisted.live}, stored ${persisted.stored})`);
+if (persisted.live !== 1.2 || persisted.stored !== 1.2) { console.error('✗ sensitivity setting not applied/persisted'); process.exit(3); }
+
+await page.click('#menu-resume');
+await page.evaluate(async () => { await new Promise(r => setTimeout(r, 200)); });
+const resumed = await page.evaluate(() => ({
+  paused: window.__vice.state.paused,
+  open: document.getElementById('menu').classList.contains('open'),
+}));
+console.log(`→ resume: paused=${resumed.paused} open=${resumed.open}`);
+if (resumed.paused || resumed.open) { console.error('✗ menu did not close'); process.exit(3); }
+await page.evaluate(() => { window.__vice.settings.steerSensitivity = 0.75; });
 
 // photo mode toggle + capture path
 await page.keyboard.press('KeyP');

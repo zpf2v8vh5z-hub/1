@@ -37,9 +37,31 @@ through its own https host; use `VITE_HMR=on npm run dev` when working locally.
 | `P` | photo mode (drag to look, `WASD` to fly, `Space`/`Q` up & down) |
 | `H` | toggle HUD (minimap + speedometer) |
 | `ENTER` | capture a PNG screenshot (downloads `vice306-miami-*.png`) |
+| `ESC` | pause + settings menu |
 
 Photo mode keeps the current view, lets you fly the camera freely and then
 saves exactly what the canvas shows (bloom + grade included).
+
+### ESC menu
+
+`ESC` pauses the game (the world freezes, input is released) and opens the
+settings panel:
+
+| setting | effect |
+| --- | --- |
+| **Lenk-Empfindlichkeit** | 25 – 200 % steering rate; default 75 % |
+| **Kamera (Fotomodus)** | mouse-look speed in photo mode |
+| **HUD anzeigen** | minimap / speedometer / hints |
+| **Bloom / Neon-Glühen** | HDR bloom pass |
+| **Filmkorn** | film grain in the final grade |
+
+Values are stored in `localStorage` (`vice306.settings.v1`) and restored on the
+next load; *Zurücksetzen* restores the defaults. The menu is generated from a
+schema in `src/settings.js`, so adding an option is one row.
+
+Steering itself was retuned: the input ramps in over ~0.2 s instead of snapping to
+full lock, the yaw rate scales with speed and grip, and there is no pivoting while
+standing still. A 100 ms tap at 20 m/s now turns the car ~1° instead of ~25°.
 
 ## What's in the scene
 
@@ -107,13 +129,24 @@ Results are written to `screenshots/`:
 | `05-hotel-side.png` | facade textures and neon at close range |
 | `06-rear-close.png` | car paint, tail lights, wheel detail |
 | `07-reference-style.png` | the money shot: reference framing with the in-game HUD |
+| `08-mid-boulevard.png` | the stretch that used to have skyline towers on the road |
+| `09-end-of-boulevard.png` | the far end of Ocean Drive, skyline behind it |
+| `10-settings-menu.png` | the ESC pause / settings panel |
 
-The same run also asserts that the car actually drives and steers, that photo
-mode toggles and that the screenshot API returns a PNG.
+The same run also asserts that:
+
+* the car actually drives and steers;
+* a 100 ms steering tap stays under 5° and the sensitivity setting scales the rate;
+* no tall ground-based mesh stands on the roadway (regression test for the
+  skyline bug — reintroducing a tower makes the run fail);
+* `ESC` opens the menu, freezes the car, the slider applies + persists, and
+  *Weiterfahren* resumes;
+* photo mode toggles and the screenshot API returns a PNG.
 
 ### Known limitations
 
 * Traffic cars are low-poly stand-ins and pass through everything (no collision).
+* The skyline is decoration only: it sits past the end of the drivable boulevard.
 * Reflections are only planar on the road; puddles elsewhere use an env map.
 * No story, no missions, no AI NPCs — this is a scene/cinematic playground.
 
