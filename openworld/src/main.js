@@ -664,10 +664,26 @@ function animate() {
 
 // ----------------------------------------------------------------------- boot
 async function boot() {
-  loadText.textContent = "Texturen werden geladen …";
-  const tex = await loadWorldTextures((p) => {
-    loadFill.style.width = `${Math.round(p * 100)}%`;
-  });
+  loadText.textContent = "Texturen werden geladen … 0/12";
+
+  // A watchdog keeps a stuck asset request from freezing the loading screen
+  // forever — the player gets a readable error instead of an endless bar.
+  const withTimeout = (promise, ms, label) =>
+    Promise.race([
+      promise,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`${label} dauert länger als ${Math.round(ms / 1000)} s`)), ms)
+      ),
+    ]);
+
+  const tex = await withTimeout(
+    loadWorldTextures((p, done, total) => {
+      loadFill.style.width = `${Math.round(p * 100)}%`;
+      loadText.textContent = `Texturen werden geladen … ${done}/${total}`;
+    }),
+    20000,
+    "Das Laden der Texturen"
+  );
 
   loadText.textContent = "Stadt wird gebaut …";
   loadFill.style.width = "100%";
@@ -713,5 +729,9 @@ async function boot() {
 
 boot().catch((err) => {
   console.error(err);
-  loadText.textContent = `Fehler beim Laden: ${err.message}`;
+  loadText.innerHTML = `Fehler beim Laden: ${err.message}<br><br>
+    <span style="opacity:.65">Seite neu laden (Strg+Shift+R). Bleibt der Fehler, prüfe in den
+    DevTools (F12) den Tab „Netzwerk“, ob assets/tex/*.jpg und *.png mit 200 geladen werden.</span>`;
+  loadFill.style.width = "100%";
+  loadFill.style.background = "#ff5b4a";
 });

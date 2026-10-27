@@ -137,12 +137,21 @@ gekachelt werden — liegen bei 1,8–5,3.
 node tools/test_city.js     # Layout-Invarianten über 60 Städte
 node test/physics.mjs       # Beschleunigung, Bremsen, Lenken, Drift, Kollision
 node test/smoke.mjs         # baut die komplette Welt mit Fake-DOM, simuliert 40 s Spiel
+node test/textures.mjs      # Texture-Loader: löst auf, überlebt Fehler, korrekte URLs
 ```
 
 Der Smoke-Test lädt alle Module mit einem nachgebauten DOM/WebGL-Stub, baut
 Stadt, Szene, Figuren, Verkehr, Polizei und HUD und lässt 2400 Frames laufen —
 inklusive Fahr-Simulation. Er hat beim ersten Lauf zwei echte Bugs gefunden
 (Fassadentyp-Mapping zwischen Stadt und Renderer, HUD-Element-IDs).
+
+`test/textures.mjs` deckt den Texture-Loader separat ab, weil der Smoke-Test
+fertige Texturen einspeist und diesen Pfad deshalb nicht berührt. Anlass war ein
+echter Bug: der Loader wartete auf `texture.onLoad`, das three.js nie aufruft —
+die Promises blieben offen und der Ladebildschirm hing für immer. Jetzt lösen die
+Callbacks von `load()` die Promises auf, Fehler werden geloggt und aufgelöst,
+und ein 20-Sekunden-Watchdog in `boot()` verhindert, dass ein hängender Request
+die Seite blockiert.
 
 ## Bekannte Grenzen
 

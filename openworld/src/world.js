@@ -21,39 +21,69 @@ const ALBEDO = ["asphalt", "sidewalk", "facade-glass", "facade-concrete", "facad
 const FACADE_METERS = { "facade-glass": 13, "facade-concrete": 12, "facade-brick": 15 };
 
 // --------------------------------------------------------------------- textures
-function loadTexture(loader, name, { normal = false, setup } = {}) {
-  const tex = loader.load(`${TEX_DIR}${name}${normal ? "_n" : ""}.${normal ? "png" : "jpg"}`);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.anisotropy = 8;
-  if (!normal) tex.colorSpace = THREE.SRGBColorSpace;
-  if (setup) setup(tex);
-  return tex;
+export const ALBEDO_NAMES = ALBEDO;
+export const textureUrl = (name, normal = false) =>
+  `${TEX_DIR}${name}${normal ? "_n" : ""}.${normal ? "png" : "jpg"}`;
+
+/**
+ * Load every albedo + normal map.
+ *
+ * NOTE: three's TextureLoader only reports completion through the callbacks
+ * passed to load(url, onLoad, onProgress, onError) — there is no
+ * Texture#onLoad property. Resolving on those callbacks is what keeps the
+ * loading screen from hanging. Errors resolve too (with a warning) so a
+ * missing file degrades to an untextured material instead of a dead screen.
+ *
+ * Exported separately from the loader so it can be unit tested headless.
+ */
+export function loadTextureSet(loader, onProgress = () => {}) {
+  const tex = {};
+  const jobs = [];
+  const total = ALBEDO.length * 2;
+  let done = 0;
+
+  const finish = () => {
+    done++;
+    onProgress(done / total, done, total);
+  };
+
+  for (const name of ALBEDO) {
+    for (const normal of [false, true]) {
+      const key = normal ? `${name}_n` : name;
+      jobs.push(
+        new Promise((resolve) => {
+          let settled = false;
+          const settle = () => {
+            if (settled) return;
+            settled = true;
+            finish();
+            resolve();
+          };
+
+          const t = loader.load(
+            textureUrl(name, normal),
+            () => settle(),
+            undefined,
+            (err) => {
+              console.warn(`[textures] ${key} failed to load`, err);
+              settle();
+            }
+          );
+
+          t.wrapS = t.wrapT = THREE.RepeatWrapping;
+          t.anisotropy = 8;
+          if (!normal) t.colorSpace = THREE.SRGBColorSpace;
+          tex[key] = t;
+        })
+      );
+    }
+  }
+
+  return Promise.all(jobs).then(() => tex);
 }
 
 export async function loadWorldTextures(onProgress = () => {}) {
-  const loader = new THREE.TextureLoader();
-  const tex = {};
-  let done = 0;
-  const total = ALBEDO.length * 2;
-  const jobs = [];
-  for (const name of ALBEDO) {
-    jobs.push(
-      new Promise((res) => {
-        const t = loadTexture(loader, name);
-        t.onLoad = () => { onProgress(++done / total); res(); };
-        tex[name] = t;
-      })
-    );
-    jobs.push(
-      new Promise((res) => {
-        const t = loadTexture(loader, name, { normal: true });
-        t.onLoad = () => { onProgress(++done / total); res(); };
-        tex[name + "_n"] = t;
-      })
-    );
-  }
-  await Promise.all(jobs);
-  return tex;
+  return loadTextureSet(new THREE.TextureLoader(), onProgress);
 }
 
 function makeMaterials(tex) {
