@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Liberty Heights — Open-World-Sandbox</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="view"></canvas>
+
+<!-- ============ HUD ============ -->
+<div id="hud" class="hidden">
+  <div class="hud-tl">
+    <div class="vitals">
+      <div class="portrait">LH</div>
+      <div class="bars">
+        <div class="bar health"><i id="health-fill"></i></div>
+        <div class="bar armour"><i id="armour-fill"></i></div>
+      </div>
+    </div>
+    <div id="wanted" class="wanted">
+      <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+    </div>
+    <div id="weapon-box" class="weapon">
+      <div class="wpn-name">PISTOLE</div>
+      <div class="wpn-ammo"><b id="ammo">12</b><span id="ammo-reserve">/ 72</span></div>
+    </div>
+  </div>
+
+  <div class="hud-tr">
+    <div class="minimap-wrap">
+      <canvas id="minimap" width="200" height="200"></canvas>
+      <div class="minimap-ring"></div>
+      <div id="north" class="north">N</div>
+    </div>
+    <div id="clock" class="clock">19:42</div>
+  </div>
+
+  <div class="hud-br">
+    <div id="speedo" class="speedo hidden">
+      <canvas id="speedo-canvas" width="190" height="190"></canvas>
+      <div class="speedo-read"><b id="speed-value">0</b><span>km/h</span></div>
+    </div>
+    <div id="car-hint" class="car-hint hidden"></div>
+  </div>
+
+  <div id="prompt" class="prompt"></div>
+  <div id="crosshair" class="crosshair hidden">
+    <i></i><i></i><i></i><i></i>
+  </div>
+  <div id="hitmark" class="hitmark"></div>
+  <div id="damage" class="damage"></div>
+  <div id="subtle" class="subtle">Liberty Heights · Sandbox</div>
+</div>
+
+<!-- ============ LOADING ============ -->
+<div id="loading" class="overlay">
+  <div class="panel">
+    <div class="brand">LIBERTY<span>HEIGHTS</span></div>
+    <p class="tag">Open-World-Sandbox · three.js · KI-Texturen</p>
+    <div class="loader"><i id="load-fill"></i></div>
+    <p id="load-text" class="load-text">Stadt wird generiert …</p>
+  </div>
+</div>
+
+<!-- ============ START ============ -->
+<div id="start" class="overlay hidden">
+  <div class="panel wide">
+    <div class="brand">LIBERTY<span>HEIGHTS</span></div>
+    <p class="tag">Eine offene Stadt. Kein Story-Modus. Nur du, der Verkehr und die Polizei.</p>
+
+    <div class="controls">
+      <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><em>Laufen / Fahren / Lenken</em></div>
+      <div><kbd>Shift</kbd><em>Sprint (zu Fuß) · Boost (Auto)</em></div>
+      <div><kbd>Leertaste</kbd><em>Springen · Handbremse (Auto)</em></div>
+      <div><kbd>Maus</kbd><em>Umsehen (Klick ins Bild)</em></div>
+      <div><kbd>Linksklick</kbd><em>Schießen</em><kbd>Rechtsklick</kbd><em>Zielen</em></div>
+      <div><kbd>F</kbd><em>Ein-/Aussteigen</em><kbd>R</kbd><em>Nachladen</em></div>
+      <div><kbd>H</kbd><em>Hupe</em><kbd>M</kbd><em>Ton aus</em><kbd>Esc</kbd><em>Pause</em></div>
+    </div>
+
+    <p class="note">Tipp: Jedes Fahrzeug in der Stadt gehört dir, wenn du es erreichen kannst. Je mehr Aufmerksamkeit du erregst, desto mehr Sterne — und desto mehr Polizei.</p>
+    <button id="play">Stadt betreten</button>
+  </div>
+</div>
+
+<!-- ============ PAUSE ============ -->
+<div id="pause" class="overlay hidden">
+  <div class="panel">
+    <h2>Pause</h2>
+    <p class="tag">Die Stadt wartet nicht lange.</p>
+    <button id="resume">Weiterspielen</button>
+    <p class="hintline">Esc oder Klick auf das Bild setzt das Spiel fort.</p>
+  </div>
+</div>
+
+<!-- ============ DEATH ============ -->
+<div id="dead" class="overlay hidden">
+  <div class="panel">
+    <h2 class="wasted">ERLEDIGT</h2>
+    <p class="tag">Die Stadt hat dich ausgespuckt.</p>
+    <button id="respawn">Neu aufstellen</button>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three.module.js"
+  }
+}
+</script>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
