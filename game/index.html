@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Runenlicht — Texture-Demo</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="hud" class="hidden">
+  <div class="hud-left">
+    <div class="portrait"><img src="assets/hero.jpg" alt="Heldin"></div>
+    <div class="bars">
+      <div class="hp-wrap"><div id="hp" class="hp"></div></div>
+      <div class="rune-row">
+        <span class="rune-dot"></span>
+        <span id="runes">0 / 5 Runen</span>
+      </div>
+    </div>
+  </div>
+  <div class="hud-right">
+    <span class="hint">WASD / Pfeile — bewegen &nbsp;·&nbsp; Leertaste — Ausweichen &nbsp;·&nbsp; P — Pause</span>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<div id="overlay" class="overlay">
+  <div class="panel">
+    <img class="title-portrait" src="assets/hero.jpg" alt="Heldin">
+    <h1>Runenlicht</h1>
+    <p class="sub">Ein Mini-Dungeon, gebaut mit KI-generierten Texturen.</p>
+    <p class="desc">Sammle <b>5 Runen</b> im Verlies, weiche den Schatten aus und
+    erreiche das leuchtende Portal. Alle Wand-, Boden- und Kistentexturen wurden
+    prozedural kachelbar gemacht.</p>
+    <div class="legend">
+      <span><i class="sw floor"></i> Boden</span>
+      <span><i class="sw wall"></i> Wand</span>
+      <span><i class="sw crate"></i> Kiste</span>
+    </div>
+    <button id="start">Verlies betreten</button>
+  </div>
+</div>
+
+<div id="touch" class="hidden">
+  <div id="stick"><div id="knob"></div></div>
+  <button id="dash">Ausweichen</button>
+</div>
+
+<script src="src/dungeon.js"></script>
+<script src="src/main.js"></script>
+</body>
+</html>
