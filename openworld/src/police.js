@@ -1,10 +1,10 @@
 /* Wanted level, pursuit cars and foot officers. */
 
 import * as THREE from "three";
-import { Vehicle } from "./vehicle.js?v=2ea309c";
-import { resolveCircle, pointBlocked } from "./physics.js?v=2ea309c";
-import { createCharacterMesh, angleDelta } from "./characters.js?v=2ea309c";
-import { toWorld, CELL, ROAD_W, N_BLOCKS } from "./city.js?v=2ea309c";
+import { Vehicle } from "./vehicle.js?v=a54b142";
+import { resolveCircle, pointBlocked } from "./physics.js?v=a54b142";
+import { createCharacterMesh, angleDelta } from "./characters.js?v=a54b142";
+import { toWorld, CELL, ROAD_W, N_BLOCKS } from "./city.js?v=a54b142";
 
 const MAX_WANTED = 5;
 
@@ -172,7 +172,8 @@ export class Police {
       const controls = {
         throttle: 0,
         brake: 0,
-        steer: THREE.MathUtils.clamp(diff * 1.7, -1, 1),
+        // Vehicle.update negates steer internally, so aim with the opposite sign
+        steer: -THREE.MathUtils.clamp(diff * 1.7, -1, 1),
         handbrake: false,
       };
 

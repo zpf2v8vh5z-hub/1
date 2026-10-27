@@ -1,6 +1,6 @@
 /* DOM + canvas HUD: minimap, health, wanted stars, ammo, speedometer. */
 
-import { WORLD_SIZE, BLOCK_S } from "./city.js?v=2ea309c";
+import { WORLD_SIZE, BLOCK_S } from "./city.js?v=a54b142";
 
 const MAP_PPM = 2;
 const MM_SIZE = 200;
@@ -119,6 +119,12 @@ export class HUD {
     } else {
       this.el.prompt.classList.remove("show");
     }
+  }
+
+  setTouchMode(active) {
+    this.touchMode = !!active;
+    // the HUD sits above the joystick on small screens
+    this.el.hud.classList.toggle("touch-layout", !!active);
   }
 
   setCrosshair(visible) {

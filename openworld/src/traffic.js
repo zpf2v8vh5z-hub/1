@@ -1,9 +1,9 @@
 /* Ambient life: lane-following traffic and pedestrians walking block perimeters. */
 
 import * as THREE from "three";
-import { createCarMesh, CAR_COLORS } from "./vehicle.js?v=2ea309c";
-import { createCharacterMesh, randomPalette } from "./characters.js?v=2ea309c";
-import { toWorld, CELL, ROAD_W, BLOCK_S, N_BLOCKS } from "./city.js?v=2ea309c";
+import { createCarMesh, CAR_COLORS } from "./vehicle.js?v=a54b142";
+import { createCharacterMesh, randomPalette } from "./characters.js?v=a54b142";
+import { toWorld, CELL, ROAD_W, BLOCK_S, N_BLOCKS } from "./city.js?v=a54b142";
 
 const LANE = 4.6;
 const ROAD_CENTRES = Array.from({ length: N_BLOCKS + 1 }, (_, i) => i * CELL + ROAD_W / 2);

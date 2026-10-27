@@ -1,7 +1,7 @@
 /* Arcade car physics + procedurally built car meshes (no external models). */
 
 import * as THREE from "three";
-import { resolveCircle } from "./physics.js?v=2ea309c";
+import { resolveCircle } from "./physics.js?v=a54b142";
 
 export const CAR_COLORS = [
   0xa83232, 0x2f4f7a, 0xd9d4c6, 0x2b2b30, 0x44674a,
@@ -196,7 +196,11 @@ export class Vehicle {
     const highSpeedDamp = 1 - 0.5 * Math.min(1, Math.abs(forwardSpeed) / 40);
     const dirSign = forwardSpeed < -0.4 ? -1 : 1;
     this.steer += (steerInput - this.steer) * Math.min(1, 9 * dt);
-    this.yaw += this.steer * 2.4 * gripSteer * highSpeedDamp * dirSign * dt * (handbrake ? 1.35 : 1);
+    // Positive steer must turn the car towards screen-right. With a camera
+    // looking along +Z, screen-right is world -X, and increasing yaw swings the
+    // forward vector towards +X — hence the minus sign here (and in the wheel
+    // visuals). Keeping the sign in one place avoids mirrored input elsewhere.
+    this.yaw -= this.steer * 2.4 * gripSteer * highSpeedDamp * dirSign * dt * (handbrake ? 1.35 : 1);
 
     // --- engine / brakes
     const heading2 = this.forwardVector();
@@ -258,7 +262,7 @@ export class Vehicle {
     forwardSpeed = this.vel.dot(heading2);
     this.wheelSpin += (forwardSpeed * dt) / WHEEL_R;
     for (const w of this.parts.wheels) w.rotation.x = this.wheelSpin;
-    for (const p of this.parts.frontPivots) p.rotation.y = this.steer * 0.42;
+    for (const p of this.parts.frontPivots) p.rotation.y = this.steer * 0.42; // matches the yaw sign above
 
     // brake light glow
     const braking = brake > 0 && forwardSpeed > 0.5;

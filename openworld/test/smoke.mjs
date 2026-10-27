@@ -156,6 +156,7 @@ const { Police } = await import("../src/police.js");
 const { Effects } = await import("../src/effects.js");
 const { GameAudio } = await import("../src/audio.js");
 const { HUD } = await import("../src/hud.js");
+const { auditMaterials, formatAudit } = await import("../src/audit.js");
 const { pointBlocked } = await import("../src/physics.js");
 
 // three needs a canvas to derive texture parameters in some paths
@@ -195,6 +196,25 @@ if (!placeholderWorld.materials.asphalt.map) fail("asphalt map not patched");
 if (!placeholderWorld.materials.asphalt.normalMap) fail("asphalt normal map not patched");
 if (!placeholderWorld.materials.glass.emissiveMap) fail("facade emissive map not patched");
 console.log(`  texture hot-swap patched ${patched}/6 materials`);
+
+// placeholder materials must be reported as placeholders, real ones as images
+console.log("auditing texture health …");
+{
+  const rows = auditMaterials(placeholderWorld.materials);
+  if (rows.length < 6) fail(`audit returned ${rows.length} materials`);
+  const weird = rows.filter((r) => r.expectTexture && (r.map.kind === "none" || r.map.kind === "broken"));
+  if (weird.length) fail(`materials without a usable map: ${weird.map((r) => r.material).join(", ")}`);
+  console.log("  " + formatAudit(rows).split("\n")[0]);
+  console.log(`  ${rows.length} materials audited`);
+}
+
+// toggling back to placeholders must work (in-game T key)
+{
+  const restored = applyTextures(placeholderWorld.materials, null);
+  if (restored !== 6) fail(`restore placeholder patched ${restored}, expected 6`);
+  if (placeholderWorld.materials.asphalt.normalMap) fail("normal map still present after restoring placeholders");
+  console.log("  toggle back to placeholders works");
+}
 
 console.log("building world (with textures) …");
 const world = buildWorld(scene, city, fakeTextureSet());

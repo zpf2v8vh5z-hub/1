@@ -2,7 +2,7 @@
    trees and street lamps. Merged/instanced geometry keeps draw calls low. */
 
 import * as THREE from "three";
-import { boxWithUV, planeWithUV, place, merge, mergeColored } from "./geo.js?v=2ea309c";
+import { boxWithUV, planeWithUV, place, merge, mergeColored } from "./geo.js?v=a54b142";
 import {
   toWorld,
   BLOCK_S,
@@ -12,8 +12,8 @@ import {
   N_BLOCKS,
   SIDEWALK,
   collisionBoxes,
-} from "./city.js?v=2ea309c";
-import { buildColliderGrid } from "./physics.js?v=2ea309c";
+} from "./city.js?v=a54b142";
+import { buildColliderGrid } from "./physics.js?v=a54b142";
 
 const TEX_DIR = "assets/tex/";
 const ALBEDO = ["asphalt", "sidewalk", "facade-glass", "facade-concrete", "facade-brick", "grass"];
@@ -186,7 +186,17 @@ function makeMaterials(tex = null) {
 
 /** Patch real textures into already-built materials (hot-swap after load). */
 export function applyTextures(materials, tex) {
-  if (!tex) return 0;
+  if (!tex) {
+    // restore the procedural placeholders (used by the in-game texture toggle)
+    for (const [matKey, [albedoName]] of Object.entries(MATERIAL_TEXTURES)) {
+      const mat = materials[matKey];
+      if (!mat) continue;
+      mat.map = fallbackTexture(FALLBACK_COLORS[matKey]);
+      mat.normalMap = null;
+      mat.needsUpdate = true;
+    }
+    return Object.keys(MATERIAL_TEXTURES).length;
+  }
   let patched = 0;
   for (const [matKey, [albedoName, normalName]] of Object.entries(MATERIAL_TEXTURES)) {
     const mat = materials[matKey];

@@ -41,6 +41,29 @@ drive(2.5, { brake: 1 }, car2);
 console.log(`reverse speed: ${(car2.vel.dot(new THREE.Vector3(Math.sin(car2.yaw), 0, Math.cos(car2.yaw)))).toFixed(1)} m/s`);
 if (car2.pos.z > -2) fail("car does not reverse");
 
+// --- steering DIRECTION: D (steer +1) must turn towards screen-right --------
+// With a camera looking along +Z, screen-right is world -X.
+{
+  const c = new Vehicle(fakeScene, {});
+  c.setPosition(0, 0, 0); // yaw 0 -> forward is +Z
+  drive(1.2, { throttle: 1 }, c);
+  const x0 = c.pos.x;
+  drive(1.2, { throttle: 1, steer: 1 }, c); // "D"
+  const dxRight = c.pos.x - x0;
+  console.log(`pressing D moved x by ${dxRight.toFixed(2)} m (must be negative = screen right)`);
+  if (!(dxRight < -0.5)) fail(`steering inverted: D moved x by ${dxRight.toFixed(2)}`);
+}
+{
+  const c = new Vehicle(fakeScene, {});
+  c.setPosition(0, 0, 0);
+  drive(1.2, { throttle: 1 }, c);
+  const x0 = c.pos.x;
+  drive(1.2, { throttle: 1, steer: -1 }, c); // "A"
+  const dxLeft = c.pos.x - x0;
+  console.log(`pressing A moved x by ${dxLeft.toFixed(2)} m (must be positive = screen left)`);
+  if (!(dxLeft > 0.5)) fail(`steering inverted: A moved x by ${dxLeft.toFixed(2)}`);
+}
+
 // --- steering actually turns ------------------------------------------------
 const car3 = new Vehicle(fakeScene, {});
 car3.setPosition(0, 0, 0);
@@ -58,7 +81,8 @@ function slipTest(handbrake) {
   c.setPosition(0, 0, 0);
   drive(3, { throttle: 1 }, c);
   const forward = new THREE.Vector3(Math.sin(c.yaw), 0, Math.cos(c.yaw));
-  c.yaw += 0.5; // kick the heading sideways
+  // kick the heading the same way the steering will turn (steer +1 lowers yaw)
+  c.yaw -= 0.5;
   drive(0.5, { throttle: 1, steer: 1, handbrake }, c);
   const f2 = new THREE.Vector3(Math.sin(c.yaw), 0, Math.cos(c.yaw));
   const along = Math.abs(c.vel.dot(f2));
@@ -89,6 +113,28 @@ const hit = resolveCircle(walls, pos, 0.4);
 console.log(`circle push-out: hit=${hit} x=${pos.x.toFixed(2)}`);
 if (!hit) fail("resolveCircle missed a clear overlap");
 if (pointBlocked(walls, pos.x, pos.z, 0)) fail("pushed-out point is still inside the wall");
+
+// --- on foot: camera-relative movement --------------------------------------
+{
+  const { Player } = await import("../src/characters.js");
+  const player = new Player(fakeScene);
+  player.setPosition(0, 0);
+  const input = { forward: 0, right: 1, run: false, jump: false, camYaw: 0, aiming: false };
+  for (let i = 0; i < 60; i++) player.update(dt, input, grid, bounds);
+  console.log(`on foot, D pressed, camYaw 0: x=${player.pos.x.toFixed(2)} (must be negative = screen right)`);
+  if (!(player.pos.x < -0.8)) fail(`on-foot movement inverted: x=${player.pos.x.toFixed(2)}`);
+
+  const player2 = new Player(fakeScene);
+  player2.setPosition(0, 0);
+  for (let i = 0; i < 60; i++) player2.update(dt, { ...input, right: -1 }, grid, bounds);
+  if (!(player2.pos.x > 0.8)) fail(`on-foot A inverted: x=${player2.pos.x.toFixed(2)}`);
+
+  const player3 = new Player(fakeScene);
+  player3.setPosition(0, 0);
+  for (let i = 0; i < 60; i++) player3.update(dt, { ...input, right: 0, forward: 1 }, grid, bounds);
+  console.log(`on foot, W pressed: z=${player3.pos.z.toFixed(2)} (must be positive)`);
+  if (!(player3.pos.z > 0.8)) fail(`on-foot forward inverted: z=${player3.pos.z.toFixed(2)}`);
+}
 
 console.log("");
 if (failures) {

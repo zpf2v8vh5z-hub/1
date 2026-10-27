@@ -1,7 +1,7 @@
 /* Low-poly character meshes + the on-foot player controller. */
 
 import * as THREE from "three";
-import { resolveCircle } from "./physics.js?v=2ea309c";
+import { resolveCircle } from "./physics.js?v=a54b142";
 
 const PALETTES = [
   { jacket: 0x2b3a4a, pants: 0x23262b, skin: 0xc9a184, shirt: 0x8f9aa6 },
@@ -129,10 +129,13 @@ export class Player {
     const wish = new THREE.Vector3(input.right, 0, input.forward);
     if (wish.lengthSq() > 1) wish.normalize();
 
-    // rotate the wish direction into world space using the camera yaw
+    // Rotate the wish direction into world space using the camera yaw.
+    // camera forward = (sin yaw, 0, cos yaw), camera right = (-cos yaw, 0, sin yaw)
+    // (with a camera behind the player looking along +Z, screen-right is -X),
+    // so: world = right * wish.x + forward * wish.z
     const sin = Math.sin(input.camYaw);
     const cos = Math.cos(input.camYaw);
-    const wx = wish.x * cos - wish.z * sin;
+    const wx = -wish.x * cos + wish.z * sin;
     const wz = wish.x * sin + wish.z * cos;
 
     const target = new THREE.Vector3(wx * speedTarget, 0, wz * speedTarget);

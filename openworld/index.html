@@ -8,6 +8,18 @@
 </head>
 <body>
 <canvas id="view"></canvas>
+<div id="touch-look"></div>
+
+<!-- ============ TOUCH ============ -->
+<div id="touch-ui" class="touch-ui hidden">
+  <div id="stick" class="stick"><div id="knob" class="knob"><i></i></div></div>
+  <div class="touch-actions">
+    <button class="tbtn fire" data-btn="fire" type="button">Feuer</button>
+    <button class="tbtn" data-btn="enter" type="button">Ein/Aus</button>
+    <button class="tbtn" data-btn="action" type="button">Bremse</button>
+    <button class="tbtn small" data-btn="reload" type="button">Nachladen</button>
+  </div>
+</div>
 
 <!-- ============ HUD ============ -->
 <div id="hud" class="hidden">
@@ -58,7 +70,7 @@
 <div id="loading" class="overlay">
   <div class="panel">
     <div class="brand">LIBERTY<span>HEIGHTS</span></div>
-    <div class="build-badge" id="load-build">v2ea309c · bcf951e</div>
+    <div class="build-badge" id="load-build">va54b142 · 5221388</div>
     <p class="tag">Open-World-Sandbox · three.js · KI-Texturen</p>
     <div class="loader"><i id="load-fill"></i></div>
     <p id="load-text" class="load-text">Stadt wird generiert …</p>
@@ -82,9 +94,15 @@
       <div><kbd>H</kbd><em>Hupe</em><kbd>M</kbd><em>Ton aus</em><kbd>Esc</kbd><em>Pause</em></div>
     </div>
 
-    <p id="build-id" class="build-line">v2ea309c · bcf951e · <button id="diagnose" class="link-btn" type="button">Diagnose</button></p>
+    <p id="build-id" class="build-line">va54b142 · 5221388 · <button id="diagnose" class="link-btn" type="button">Diagnose</button></p>
 
     <p class="note">Tipp: Jedes Fahrzeug in der Stadt gehört dir, wenn du es erreichen kannst. Je mehr Aufmerksamkeit du erregst, desto mehr Sterne — und desto mehr Polizei.</p>
+    <label class="touch-toggle">
+      <input type="checkbox" id="touch-enabled">
+      <span>Touchscreen-Steuerung</span>
+      <em>Joystick links, Aktionen rechts — wird auf Touch-Geräten automatisch erkannt</em>
+    </label>
+
     <button id="play">Stadt betreten</button>
   </div>
 </div>
@@ -94,6 +112,10 @@
   <div class="panel">
     <h2>Pause</h2>
     <p class="tag">Die Stadt wartet nicht lange.</p>
+    <label class="touch-toggle compact">
+      <input type="checkbox" id="touch-enabled-pause">
+      <span>Touchscreen-Steuerung</span>
+    </label>
     <button id="resume">Weiterspielen</button>
     <p class="hintline">Esc oder Klick auf das Bild setzt das Spiel fort.</p>
   </div>
@@ -112,7 +134,7 @@
 
 <script>
   // stamped by tools/stamp_build.py — lets us tell which code is actually live
-  window.LH_BUILD = "v2ea309c · bcf951e";
+  window.LH_BUILD = "va54b142 · 5221388";
   const b = document.getElementById("load-build");
   if (b) b.textContent = window.LH_BUILD;
   const bi = document.getElementById("build-id");
@@ -122,10 +144,10 @@
 <script type="importmap">
 {
   "imports": {
-    "three": "./vendor/three.module.js?v=2ea309c"
+    "three": "./vendor/three.module.js?v=a54b142"
   }
 }
 </script>
-<script type="module" src="src/main.js?v=2ea309c"></script>
+<script type="module" src="src/main.js?v=a54b142"></script>
 </body>
 </html>

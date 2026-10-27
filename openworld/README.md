@@ -47,6 +47,22 @@ Kein Build-Schritt, kein npm install — three.js liegt als einzelne Datei in `v
 | `H` | — | Hupe |
 | `M` | Ton stumm | Ton stumm |
 | `Esc` | Pause | Pause |
+| `T` | Texturen: echte zu Platzhalter umschalten | dito |
+
+### Touchscreen
+
+Auf Geräten mit Touch wird die Steuerung automatisch aktiv (`?touch=1` erzwingt
+sie, `?touch=0` schaltet sie ab). Im Start- und Pause-Menü gibt es dafür einen
+Schalter, die Wahl wird in `localStorage` gespeichert.
+
+- **Joystick links** — zu Fuß Bewegung, im Auto Lenkung (x) und Gas/Bremse (y),
+  mit Deadzone gegen Kriechen
+- **Rechts: Feuer, Ein/Aus, Bremse/Handbremse, Nachladen**
+- **Wischen auf der rechten Bildschirmhälfte** dreht die Kamera (kein Pointer Lock nötig)
+
+Die Touch-Eingabe schreibt in denselben Eingabezustand wie die Tastatur, es gibt
+also keine zweite Spiel-Logik — `test/touch.mjs` prüft Deadzone, Achsen,
+Buttons, Look-Drag und Geräteerkennung headless.
 
 Jedes geparkte Auto und jedes Verkehrsauto ist übernehmbar. Zielscheiben sind
 Passanten, Polizisten, Autos und die Polizei selbst — jede Aktion erhöht das
@@ -149,6 +165,7 @@ node tools/test_city.js     # Layout-Invarianten über 60 Städte
 node test/physics.mjs       # Beschleunigung, Bremsen, Lenken, Drift, Kollision
 node test/smoke.mjs         # baut die komplette Welt mit Fake-DOM, simuliert 40 s Spiel
 node test/textures.mjs      # Texture-Loader: löst auf, überlebt Fehler, korrekte URLs
+node test/touch.mjs         # Touch-Steuerung: Deadzone, Achsen, Buttons, Look, Erkennung
 ```
 
 Der Smoke-Test lädt alle Module mit einem nachgebauten DOM/WebGL-Stub, baut

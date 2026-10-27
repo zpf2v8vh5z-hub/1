@@ -3,16 +3,16 @@
    traffic, police pursuit, shooting and the HUD loop. */
 
 import * as THREE from "three";
-import { generateCity, toWorld, CELL, ROAD_W, N_BLOCKS, BLOCK_S, WORLD_SIZE } from "./city.js?v=2ea309c";
-import { loadWorldTextures, buildWorld, applyTextures, ALBEDO_NAMES } from "./world.js?v=2ea309c";
-import { Player, angleDelta } from "./characters.js?v=2ea309c";
-import { Vehicle, CAR_COLORS } from "./vehicle.js?v=2ea309c";
-import { Traffic } from "./traffic.js?v=2ea309c";
-import { Police } from "./police.js?v=2ea309c";
-import { Effects } from "./effects.js?v=2ea309c";
-import { GameAudio } from "./audio.js?v=2ea309c";
-import { HUD } from "./hud.js?v=2ea309c";
-import { pointBlocked } from "./physics.js?v=2ea309c";
+import { generateCity, toWorld, CELL, ROAD_W, N_BLOCKS, BLOCK_S, WORLD_SIZE } from "./city.js?v=a54b142";
+import { loadWorldTextures, buildWorld, applyTextures, ALBEDO_NAMES } from "./world.js?v=a54b142";
+import { Player, angleDelta } from "./characters.js?v=a54b142";
+import { Vehicle, CAR_COLORS } from "./vehicle.js?v=a54b142";
+import { Traffic } from "./traffic.js?v=a54b142";
+import { Police } from "./police.js?v=a54b142";
+import { Effects } from "./effects.js?v=a54b142";
+import { GameAudio } from "./audio.js?v=a54b142";
+import { HUD } from "./hud.js?v=a54b142";
+import { pointBlocked } from "./physics.js?v=a54b142";
 
 // ------------------------------------------------------------------ DOM handles
 const canvas = document.getElementById("view");
@@ -43,6 +43,43 @@ const camera = new THREE.PerspectiveCamera(64, window.innerWidth / window.innerH
 const audio = new GameAudio();
 const effects = new Effects(scene);
 
+// --------------------------------------------------------------- touch setup
+const TOUCH_KEY = "lh.touch";
+const savedTouch = localStorage.getItem(TOUCH_KEY);
+const touch = new TouchControls({
+  root: document.getElementById("touch-ui"),
+  stick: document.getElementById("stick"),
+  knob: document.getElementById("knob"),
+  buttons: [...document.querySelectorAll("#touch-ui [data-btn]")],
+  onAction: (name, phase) => {
+    if (G.mode !== "playing") return;
+    if (phase !== "press") return;
+    if (name === "enter") {
+      if (G.vehicle) exitVehicle();
+      else if (G.player.alive) enterVehicle();
+    }
+    if (name === "reload") startReload();
+  },
+});
+
+function setTouchEnabled(on, { silent = false } = {}) {
+  touch.setEnabled(on);
+  localStorage.setItem(TOUCH_KEY, on ? "1" : "0");
+  for (const id of ["touch-enabled", "touch-enabled-pause"]) {
+    const el = document.getElementById(id);
+    if (el) el.checked = on;
+  }
+  if (on && !silent && G.mode === "playing" && document.pointerLockElement) {
+    document.exitPointerLock();
+  }
+  if (G.hud) G.hud.setTouchMode(on);
+}
+
+const wantsPointerLock = () => !touch.active;
+const lockPointer = () => {
+  if (wantsPointerLock()) canvas.requestPointerLock();
+};
+
 // ------------------------------------------------------------------ game state
 const G = {
   mode: "loading", // loading | menu | playing | paused | dead
@@ -67,6 +104,15 @@ const G = {
 };
 
 // ---------------------------------------------------------------------- camera
+function applyTouchLook() {
+  if (!touch.active) return;
+  const { dx, dy } = touch.takeLook();
+  if (!dx && !dy) return;
+  G.cam.yaw += dx * 0.0052;
+  G.cam.pitch = THREE.MathUtils.clamp(G.cam.pitch - dy * 0.0042, -0.12, 0.95);
+  G.cam.mouseIdle = 0;
+}
+
 function updateCamera(dt) {
   const target = new THREE.Vector3();
   let desiredYaw = G.cam.yaw;
@@ -386,7 +432,7 @@ function respawn() {
   G.hud.setAmmo(G.weapon.mag, G.weapon.reserve, false);
   G.hud.show();
   G.mode = "playing";
-  canvas.requestPointerLock();
+  lockPointer();
 }
 
 function pause() {
@@ -401,7 +447,7 @@ function resume() {
   if (G.mode !== "paused") return;
   pauseEl.classList.add("hidden");
   G.mode = "playing";
-  canvas.requestPointerLock();
+  lockPointer();
 }
 
 // ----------------------------------------------------------------------- input
@@ -411,6 +457,18 @@ window.addEventListener("keydown", (e) => {
     e.preventDefault();
   }
   G.keys.add(k);
+
+  if (k === "t" && G.mode === "playing" && G.world) {
+    G.showPlaceholders = !G.showPlaceholders;
+    const n = applyTextures(G.world.materials, G.showPlaceholders ? null : G.textures);
+    setTexStatus(
+      G.showPlaceholders
+        ? "Platzhalter-Texturen aktiv (T für echte Texturen)"
+        : `Echte Texturen aktiv`,
+      G.showPlaceholders ? "loading" : "ready"
+    );
+    console.info(`[textures] toggle -> ${G.showPlaceholders ? "placeholder" : "real"} (${n} patched)`);
+  }
 
   if (G.mode === "playing") {
     if (k === "f" || k === "e") {
@@ -439,7 +497,7 @@ window.addEventListener("blur", () => G.keys.clear());
 
 canvas.addEventListener("mousedown", (e) => {
   if (G.mode !== "playing") return;
-  if (!document.pointerLockElement) {
+  if (wantsPointerLock() && !document.pointerLockElement) {
     canvas.requestPointerLock();
     return;
   }
@@ -469,7 +527,8 @@ canvas.addEventListener("wheel", (e) => {
 }, { passive: false });
 
 document.addEventListener("pointerlockchange", () => {
-  if (!document.pointerLockElement && G.mode === "playing") pause();
+  // on touch there is no pointer lock at all, so this must not trigger a pause
+  if (wantsPointerLock() && !document.pointerLockElement && G.mode === "playing") pause();
 });
 
 window.addEventListener("resize", () => {
@@ -486,11 +545,18 @@ let fpsFrames = 0;
 function updateDriving(dt) {
   const v = G.vehicle;
   const k = G.keys;
+  const t = touch.active ? touch.axis : { x: 0, y: 0 };
   const controls = {
-    throttle: k.has("w") || k.has("arrowup") ? 1 : 0,
-    brake: k.has("s") || k.has("arrowdown") ? 1 : 0,
-    steer: (k.has("d") || k.has("arrowright") ? 1 : 0) - (k.has("a") || k.has("arrowleft") ? 1 : 0),
-    handbrake: k.has("space"),
+    throttle: Math.min(1, (k.has("w") || k.has("arrowup") ? 1 : 0) + Math.max(0, -t.y)),
+    brake: Math.min(1, (k.has("s") || k.has("arrowdown") ? 1 : 0) + Math.max(0, t.y)),
+    steer: THREE.MathUtils.clamp(
+      (k.has("d") || k.has("arrowright") ? 1 : 0) -
+        (k.has("a") || k.has("arrowleft") ? 1 : 0) +
+        (touch.active ? t.x : 0),
+      -1,
+      1
+    ),
+    handbrake: k.has("space") || touch.held("action"),
     boost: k.has("shift"),
   };
   v.update(dt, controls, G.world.grid, G.city.bounds);
@@ -558,13 +624,22 @@ function updateDriving(dt) {
 
 function updateOnFoot(dt) {
   const k = G.keys;
+  const t = touch.active ? touch.axis : { x: 0, y: 0 };
   const input = {
-    forward: (k.has("w") || k.has("arrowup") ? 1 : 0) - (k.has("s") || k.has("arrowdown") ? 1 : 0),
-    right: (k.has("d") || k.has("arrowright") ? 1 : 0) - (k.has("a") || k.has("arrowleft") ? 1 : 0),
-    run: k.has("shift"),
-    jump: k.has("space"),
+    forward: THREE.MathUtils.clamp(
+      (k.has("w") || k.has("arrowup") ? 1 : 0) - (k.has("s") || k.has("arrowdown") ? 1 : 0) - t.y,
+      -1,
+      1
+    ),
+    right: THREE.MathUtils.clamp(
+      (k.has("d") || k.has("arrowright") ? 1 : 0) - (k.has("a") || k.has("arrowleft") ? 1 : 0) + t.x,
+      -1,
+      1
+    ),
+    run: k.has("shift") || Math.hypot(t.x, t.y) > 0.85,
+    jump: k.has("space") || touch.held("action"),
     camYaw: G.cam.yaw,
-    aiming: G.mouse.aim,
+    aiming: G.mouse.aim || touch.held("fire"),
   };
   G.player.update(dt, input, G.world.grid, G.city.bounds);
 
@@ -574,7 +649,8 @@ function updateOnFoot(dt) {
 
   audio.setEngine(false, 0, 0);
 
-  if (G.mouse.down) {
+  const wantsFire = G.mouse.down || touch.held("fire");
+  if (wantsFire) {
     if (G.elapsed - G.lastShotAt > 0.15) shoot();
   }
 }
@@ -587,6 +663,7 @@ function animate() {
   if (G.mode === "playing" || G.mode === "paused" || G.mode === "dead") {
     const active = G.mode === "playing";
     if (active) {
+      applyTouchLook();
       G.cam.mouseIdle += dt;
       G.clockMinutes = (G.clockMinutes + dt / 2.4) % (60 * 24);
 
@@ -685,10 +762,20 @@ function loadTexturesInBackground() {
     }
   })
     .then((tex) => {
+      G.textures = tex;
       const n = applyTextures(G.world.materials, tex);
       const secs = ((performance.now() - started) / 1000).toFixed(1);
-      setTexStatus(`Texturen bereit · ${n}/6 Materialien · ${secs} s`, "ready");
+      const rows = auditMaterials(G.world.materials);
+      const ok = rows.filter((r) => r.map.kind === "image").length;
+      const bad = rows.length - ok;
+      setTexStatus(
+        bad === 0
+          ? `Texturen bereit · ${ok}/${rows.length} Materialien · ${secs} s`
+          : `Texturen: ${ok}/${rows.length} geladen, ${bad} mit Platzhalter`,
+        bad === 0 ? "ready" : "error"
+      );
       console.info(`[textures] ${TEX_TOTAL} Dateien geladen, ${n} Materialien aktualisiert`);
+      console.info(formatAudit(rows));
     })
     .catch((err) => {
       console.warn("[textures] Laden fehlgeschlagen, Platzhalter bleiben aktiv", err);
@@ -742,11 +829,19 @@ async function boot() {
     startEl.classList.add("hidden");
     G.hud.show();
     G.mode = "playing";
-    canvas.requestPointerLock();
+    lockPointer();
   };
   document.getElementById("play").addEventListener("click", play);
   document.getElementById("resume").addEventListener("click", resume);
   document.getElementById("respawn").addEventListener("click", respawn);
+
+  // --- touch toggle (auto-detect unless the player decided before)
+  const initialTouch = savedTouch === null ? prefersTouch() : savedTouch === "1";
+  setTouchEnabled(initialTouch, { silent: true });
+  for (const id of ["touch-enabled", "touch-enabled-pause"]) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("change", (e) => setTouchEnabled(e.target.checked));
+  }
 
   const diag = document.getElementById("diagnose");
   if (diag) {
@@ -759,6 +854,11 @@ async function boot() {
         `WebGL: ${renderer.capabilities.isWebGL2 ? "2" : "1"} · ${renderer.getContext().getParameter(renderer.getContext().VERSION)}`,
         `Bildschirm: ${window.innerWidth}×${window.innerHeight} @ ${window.devicePixelRatio}x`,
       ];
+      const rows = auditMaterials(G.world.materials);
+      lines.push("");
+      lines.push("Texturen:");
+      lines.push(formatAudit(rows));
+      console.table(rows.map((r) => ({ ...r, map: r.map.kind, normalMap: r.normalMap.kind })));
       alert(lines.join("\n"));
     });
   }

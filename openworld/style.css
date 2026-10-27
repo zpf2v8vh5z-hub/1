@@ -469,3 +469,129 @@ h2.wasted {
   border: 1px solid rgba(255, 120, 90, .5);
   box-shadow: 0 12px 40px rgba(0, 0, 0, .5);
 }
+
+/* ------------------------------------------------------------------ touch */
+#touch-look {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  touch-action: none;
+  pointer-events: none;
+}
+body.touch-mode #touch-look { pointer-events: auto; }
+
+.touch-ui {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 8;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 22px calc(18px + env(safe-area-inset-bottom, 0px));
+  pointer-events: none;
+}
+.touch-ui > * { pointer-events: auto; }
+
+.stick {
+  width: 136px;
+  height: 136px;
+  border-radius: 50%;
+  position: relative;
+  touch-action: none;
+  background: radial-gradient(circle at 50% 45%, rgba(30, 42, 58, .55), rgba(10, 15, 22, .35));
+  border: 1px solid rgba(255, 255, 255, .16);
+  box-shadow: inset 0 0 26px rgba(0, 0, 0, .45), 0 8px 24px rgba(0, 0, 0, .35);
+  backdrop-filter: blur(6px);
+}
+
+.knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 62px;
+  height: 62px;
+  margin: -31px 0 0 -31px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, rgba(255, 255, 255, .35), rgba(120, 160, 200, .18));
+  border: 1px solid rgba(255, 255, 255, .28);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .4);
+  transition: transform .04s linear;
+  display: grid;
+  place-items: center;
+}
+.knob i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .5);
+}
+
+.touch-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 74px);
+  gap: 12px;
+  align-items: end;
+}
+
+.tbtn {
+  margin: 0;
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: .04em;
+  text-transform: none;
+  color: #e9f2fa;
+  background: radial-gradient(circle at 50% 40%, rgba(40, 55, 74, .85), rgba(14, 20, 29, .85));
+  border: 1px solid rgba(255, 255, 255, .2);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .4);
+  backdrop-filter: blur(6px);
+  transition: transform .08s, background .12s, border-color .12s;
+}
+.tbtn.small { width: 74px; height: 52px; border-radius: 16px; font-size: 10px; }
+.tbtn.active,
+.tbtn:active {
+  transform: scale(.94);
+  background: radial-gradient(circle at 50% 40%, rgba(255, 170, 60, .55), rgba(120, 60, 10, .7));
+  border-color: rgba(255, 190, 90, .7);
+  color: #fff;
+}
+.tbtn.fire {
+  background: radial-gradient(circle at 50% 40%, rgba(190, 60, 50, .8), rgba(70, 16, 12, .9));
+  border-color: rgba(255, 130, 110, .5);
+  font-weight: 700;
+}
+
+.touch-toggle {
+  display: block;
+  margin: 16px 0 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  text-align: left;
+  font-size: 11.5px;
+  color: #a9b9c8;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(255, 255, 255, .07);
+  cursor: pointer;
+}
+.touch-toggle input { accent-color: #ffb43a; margin-right: 8px; vertical-align: middle; }
+.touch-toggle em {
+  display: block;
+  margin: 4px 0 0 24px;
+  font-style: normal;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: #6f8296;
+}
+.touch-toggle.compact { margin: 14px 0 0; }
+
+@media (max-width: 760px) {
+  .stick { width: 112px; height: 112px; }
+  .knob { width: 52px; height: 52px; margin: -26px 0 0 -26px; }
+  .touch-actions { grid-template-columns: repeat(2, 62px); gap: 10px; }
+  .tbtn { width: 62px; height: 62px; font-size: 10px; }
+  .tbtn.small { width: 62px; height: 46px; font-size: 9px; }
+  .hud-br { bottom: 150px; }
+}
