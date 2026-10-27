@@ -3,16 +3,16 @@
    traffic, police pursuit, shooting and the HUD loop. */
 
 import * as THREE from "three";
-import { generateCity, toWorld, CELL, ROAD_W, N_BLOCKS, BLOCK_S, WORLD_SIZE } from "./city.js?v=461031c";
-import { loadWorldTextures, buildWorld, applyTextures, ALBEDO_NAMES } from "./world.js?v=461031c";
-import { Player, angleDelta } from "./characters.js?v=461031c";
-import { Vehicle, CAR_COLORS } from "./vehicle.js?v=461031c";
-import { Traffic } from "./traffic.js?v=461031c";
-import { Police } from "./police.js?v=461031c";
-import { Effects } from "./effects.js?v=461031c";
-import { GameAudio } from "./audio.js?v=461031c";
-import { HUD } from "./hud.js?v=461031c";
-import { pointBlocked } from "./physics.js?v=461031c";
+import { generateCity, toWorld, CELL, ROAD_W, N_BLOCKS, BLOCK_S, WORLD_SIZE } from "./city.js?v=2ea309c";
+import { loadWorldTextures, buildWorld, applyTextures, ALBEDO_NAMES } from "./world.js?v=2ea309c";
+import { Player, angleDelta } from "./characters.js?v=2ea309c";
+import { Vehicle, CAR_COLORS } from "./vehicle.js?v=2ea309c";
+import { Traffic } from "./traffic.js?v=2ea309c";
+import { Police } from "./police.js?v=2ea309c";
+import { Effects } from "./effects.js?v=2ea309c";
+import { GameAudio } from "./audio.js?v=2ea309c";
+import { HUD } from "./hud.js?v=2ea309c";
+import { pointBlocked } from "./physics.js?v=2ea309c";
 
 // ------------------------------------------------------------------ DOM handles
 const canvas = document.getElementById("view");

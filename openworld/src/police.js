@@ -1,10 +1,10 @@
 /* Wanted level, pursuit cars and foot officers. */
 
 import * as THREE from "three";
-import { Vehicle } from "./vehicle.js?v=461031c";
-import { resolveCircle, pointBlocked } from "./physics.js?v=461031c";
-import { createCharacterMesh, angleDelta } from "./characters.js?v=461031c";
-import { toWorld, CELL, ROAD_W, N_BLOCKS } from "./city.js?v=461031c";
+import { Vehicle } from "./vehicle.js?v=2ea309c";
+import { resolveCircle, pointBlocked } from "./physics.js?v=2ea309c";
+import { createCharacterMesh, angleDelta } from "./characters.js?v=2ea309c";
+import { toWorld, CELL, ROAD_W, N_BLOCKS } from "./city.js?v=2ea309c";
 
 const MAX_WANTED = 5;
 

@@ -29,13 +29,11 @@ def source_hash() -> str:
         [p for p in (ROOT / "src").glob("*.js")]
         + [ROOT / "index.html", ROOT / "style.css"]
     )
+    # strip every previous stamp form so the digest only depends on real code
+    stamp_re = re.compile(r"\?v=[0-9a-f]{7}|v[0-9a-f]{7} · [0-9a-f]{7}|__VER__|__BUILD__")
     for f in files:
-        if f.name == "index.html":
-            # hash without the previous stamp so the value is stable
-            text = re.sub(r'__VER__|v\d+ · [0-9a-f]{7}', "", f.read_text())
-            h.update(f.name.encode() + text.encode())
-        else:
-            h.update(f.name.encode() + f.read_bytes())
+        text = stamp_re.sub("", f.read_text())
+        h.update(f.name.encode() + text.encode())
     return h.hexdigest()[:7]
 
 
@@ -76,9 +74,12 @@ def main() -> int:
 
     digest = source_hash()
     build = f"v{digest} · {git_rev()}"
-    # keep the version stable per source state, so caching works in our favour
-    text = re.sub(r'__VER__|v[0-9a-f]{7}(?=")', digest, text)
-    text = re.sub(r'__BUILD__|v[0-9a-f]{7} · [0-9a-f]{7}(?=")', build, text)
+    # keep the version stable per source state, so caching works in our favour.
+    # three forms appear in index.html: the ?v= query, the __VER__ placeholder
+    # and the human-readable build badge.
+    text = re.sub(r"(\?v=)[0-9a-f]{7}\b", lambda m: m.group(1) + digest, text)
+    text = text.replace("__VER__", digest)
+    text = re.sub(r"__BUILD__|v[0-9a-f]{7} · [0-9a-f]{7}", build, text)
     INDEX.write_text(text)
     modules = stamp_modules(digest)
     print(f"stamped index.html: {build} (ver {digest})")

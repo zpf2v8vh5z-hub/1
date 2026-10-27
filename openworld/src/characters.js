@@ -1,7 +1,7 @@
 /* Low-poly character meshes + the on-foot player controller. */
 
 import * as THREE from "three";
-import { resolveCircle } from "./physics.js?v=461031c";
+import { resolveCircle } from "./physics.js?v=2ea309c";
 
 const PALETTES = [
   { jacket: 0x2b3a4a, pants: 0x23262b, skin: 0xc9a184, shirt: 0x8f9aa6 },

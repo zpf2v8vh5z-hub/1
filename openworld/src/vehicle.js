@@ -1,7 +1,7 @@
 /* Arcade car physics + procedurally built car meshes (no external models). */
 
 import * as THREE from "three";
-import { resolveCircle } from "./physics.js?v=461031c";
+import { resolveCircle } from "./physics.js?v=2ea309c";
 
 export const CAR_COLORS = [
   0xa83232, 0x2f4f7a, 0xd9d4c6, 0x2b2b30, 0x44674a,
