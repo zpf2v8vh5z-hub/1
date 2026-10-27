@@ -1,0 +1,53 @@
+import * as THREE from 'three';
+
+/**
+ * Central texture registry. Everything is AI generated (see public/textures_src
+ * and tools/prepare-textures.mjs) and post-processed for real-time use.
+ */
+const MAX_ANISO = 16;
+
+export const TEX = {};
+
+function load(loader, url, { srgb = true, repeat = [1, 1], aniso = MAX_ANISO } = {}) {
+  return new Promise((resolve) => {
+    loader.load(url, (t) => {
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.repeat.set(repeat[0], repeat[1]);
+      t.anisotropy = aniso;
+      t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+      resolve(t);
+    }, undefined, () => {
+      console.warn('missing texture', url);
+      resolve(null);
+    });
+  });
+}
+
+export async function loadTextures(onProgress) {
+  const loader = new THREE.TextureLoader();
+  const entries = [
+    ['asphalt', '/textures/asphalt.jpg', { repeat: [6, 90] }],
+    ['asphaltNormal', '/textures/asphalt_normal.jpg', { srgb: false, repeat: [6, 90] }],
+    ['sidewalk', '/textures/sidewalk.jpg', { repeat: [2.2, 42] }],
+    ['sidewalkNormal', '/textures/sidewalk_normal.jpg', { srgb: false, repeat: [2.2, 42] }],
+    ['facadeNeon', '/textures/facade_neon.jpg', {}],
+    ['facadeNeonEmissive', '/textures/facade_neon_emissive.jpg', {}],
+    ['facadeWhite', '/textures/facade_white.jpg', {}],
+    ['facadeWhiteEmissive', '/textures/facade_white_emissive.jpg', {}],
+    ['palmBark', '/textures/palm_bark.jpg', { repeat: [2, 3] }],
+    ['palmFrond', '/textures/palm_frond.png', {}],
+    ['ocean', '/textures/ocean.jpg', { repeat: [26, 26] }],
+    ['sand', '/textures/sand.jpg', { repeat: [7, 155], aniso: 16 }],
+    ['clouds', '/textures/clouds.jpg', {}],
+    ['glow', '/textures/glow.png', {}],
+  ];
+
+  let done = 0;
+  await Promise.all(entries.map(async ([key, url, opts]) => {
+    TEX[key] = await load(loader, url, opts);
+    done++;
+    onProgress?.(done / entries.length);
+  }));
+  TEX.glow.wrapS = TEX.glow.wrapT = THREE.ClampToEdgeWrapping;
+  return TEX;
+}
