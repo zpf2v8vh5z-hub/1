@@ -1,0 +1,109 @@
+:root {
+  --pink: #ff2d95;
+  --cyan: #00e5ff;
+  --amber: #ffb347;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #14020f;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #fff;
+  user-select: none;
+}
+
+#app { position: fixed; inset: 0; }
+canvas#scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* ---------- loader ---------- */
+#loader {
+  position: absolute; inset: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at 60% 80%, #4a1038 0%, #18030f 55%, #08010a 100%);
+  transition: opacity .9s ease;
+}
+#loader.hidden { opacity: 0; pointer-events: none; }
+.loader-inner { text-align: center; transform: translateY(-6vh); }
+.logo {
+  font-size: 64px; font-weight: 900; letter-spacing: 10px; line-height: 1;
+  color: #fff;
+  text-shadow: 0 0 18px rgba(255, 45, 149, .9), 0 0 46px rgba(255, 45, 149, .55), 0 0 90px rgba(0, 229, 255, .35);
+}
+.logo span { color: var(--cyan); text-shadow: 0 0 18px rgba(0, 229, 255, .9), 0 0 55px rgba(0, 229, 255, .5); }
+.tagline { margin-top: 14px; font-size: 12px; letter-spacing: 6px; color: #ffb3d9; opacity: .85; }
+.bar { width: 320px; height: 3px; margin: 26px auto 12px; background: rgba(255,255,255,.12); border-radius: 3px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, var(--cyan), var(--pink)); transition: width .3s ease; }
+.status { font-size: 10px; letter-spacing: 4px; color: #ff8ec4; opacity: .7; }
+
+/* ---------- HUD ---------- */
+#hud { position: absolute; inset: 0; pointer-events: none; z-index: 20; }
+#hud.hidden > canvas,
+#hud.hidden > #hint,
+#hud.hidden > #fps,
+#hud.hidden > .vignette { opacity: 0; }
+.vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 55%, transparent 42%, rgba(30, 0, 20, .38) 100%);
+  mix-blend-mode: multiply;
+}
+
+#minimap, #speedo, #hint, #fps, .vignette { transition: opacity .45s ease; }
+#minimap, #speedo {
+  position: absolute; bottom: 22px;
+  width: 190px; height: 190px;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, .55));
+  transition: opacity .5s ease;
+}
+#minimap { left: 22px; }
+#speedo { right: 22px; }
+
+#hint {
+  position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%);
+  font-size: 11px; letter-spacing: 1.6px; color: rgba(255, 255, 255, .78);
+  background: rgba(12, 0, 10, .34);
+  border: 1px solid rgba(255, 255, 255, .12);
+  padding: 8px 16px; border-radius: 999px;
+  backdrop-filter: blur(6px);
+  transition: opacity .5s ease;
+  white-space: nowrap;
+}
+#hint b { color: #fff; }
+
+#fps {
+  position: absolute; top: 14px; right: 18px;
+  font-size: 10px; letter-spacing: 1.5px; color: rgba(255,255,255,.45);
+}
+
+/* ---------- photo mode ---------- */
+#photo-ui { position: absolute; inset: 0; opacity: 0; transition: opacity .4s ease; }
+#photo-ui.active { opacity: 1; }
+.photo-frame {
+  position: absolute; inset: 26px;
+  border: 1px solid rgba(255, 255, 255, .22);
+}
+.photo-frame::before, .photo-frame::after {
+  content: ''; position: absolute; width: 26px; height: 26px;
+  border: 2px solid rgba(255, 255, 255, .55);
+}
+.photo-frame::before { left: -2px; top: -2px; border-right: none; border-bottom: none; }
+.photo-frame::after { right: -2px; bottom: -2px; border-left: none; border-top: none; }
+.photo-hint {
+  position: absolute; left: 50%; bottom: 34px; transform: translateX(-50%);
+  font-size: 10.5px; letter-spacing: 2.4px; color: rgba(255,255,255,.8);
+  background: rgba(0,0,0,.35); padding: 8px 18px; border-radius: 999px;
+  backdrop-filter: blur(4px);
+}
+#toast {
+  position: absolute; left: 50%; top: 76px; transform: translateX(-50%) translateY(-8px);
+  font-size: 11px; letter-spacing: 2.6px; color: #fff;
+  background: rgba(255, 45, 149, .22);
+  border: 1px solid rgba(255, 45, 149, .65);
+  padding: 9px 20px; border-radius: 999px;
+  opacity: 0; transition: opacity .3s ease, transform .3s ease;
+  white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }

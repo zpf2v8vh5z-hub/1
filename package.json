@@ -1,0 +1,32 @@
+{
+  "name": "vice-306",
+  "version": "1.0.0",
+  "description": "GTA-style Miami sunset driving demo (Three.js, AI-generated textures)",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 4173",
+    "shots": "node tools/screenshot.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zpf2v8vh5z-hub/1.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/zpf2v8vh5z-hub/1/issues"
+  },
+  "homepage": "https://github.com/zpf2v8vh5z-hub/1#readme",
+  "dependencies": {
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "sharp": "^0.35.5",
+    "vite": "^6.4.5"
+  },
+  "private": true,
+  "type": "module"
+}
