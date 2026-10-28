@@ -20,6 +20,14 @@ const jobs = [
   ['palm_bark.jpg', 'palm_bark.jpg', 704, 704, 86],
   ['clouds.jpg', 'clouds.jpg', 1408, 768, 86],
   ['sand_src.jpg', 'sand.jpg', 512, 512, 84],
+  ['grass.jpg', 'grass.jpg', 1024, 1024, 84],
+  ['field.jpg', 'field.jpg', 1024, 1024, 84],
+  ['hedge.jpg', 'hedge.jpg', 512, 512, 86],
+  ['paving.jpg', 'paving.jpg', 1024, 1024, 86],
+  ['facade_brick.jpg', 'facade_brick.jpg', 1024, 1024, 86],
+  ['facade_modern.jpg', 'facade_modern.jpg', 1408, 768, 86],
+  ['shopfront.jpg', 'shopfront.jpg', 1408, 768, 86],
+  ['facade_civic.jpg', 'facade_civic.jpg', 1408, 768, 86],
 ];
 
 for (const [src, dst, w, h, q] of jobs) {
@@ -116,7 +124,8 @@ console.log('texture prep done');
 
 // ---- derive emissive masks for the facades (lit windows + neon) ----
 async function emissiveMask(src, dst) {
-  const { data, info } = await sharp(path.join(SRC, src)).resize(1408, 768, { fit: 'fill' })
+  const meta = await sharp(path.join(SRC, src)).metadata();
+  const { data, info } = await sharp(path.join(SRC, src)).resize(meta.width, meta.height, { fit: 'fill' })
     .removeAlpha().raw().toBuffer({ resolveWithObject: true });
   const n = info.width * info.height;
   const out = Buffer.alloc(n * 3);
@@ -141,4 +150,8 @@ async function emissiveMask(src, dst) {
 }
 await emissiveMask('facade_neon.jpg', 'facade_neon_emissive.jpg');
 await emissiveMask('facade_white.jpg', 'facade_white_emissive.jpg');
+await emissiveMask('facade_brick.jpg', 'facade_brick_emissive.jpg');
+await emissiveMask('facade_modern.jpg', 'facade_modern_emissive.jpg');
+await emissiveMask('shopfront.jpg', 'shopfront_emissive.jpg');
+await emissiveMask('facade_civic.jpg', 'facade_civic_emissive.jpg');
 console.log('emissive masks done');

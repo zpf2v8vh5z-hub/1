@@ -5,6 +5,8 @@ import { buildWorld, makeRng } from './world.js';
 import { loadPlayerCar } from './car.js';
 import { createPostFX } from './postfx.js';
 import { Hud } from './hud.js';
+import { buildCity } from './city.js';
+import { GRID } from './cityplan.js';
 import { LAYOUT } from './world.js';
 import {
   settings, loadSettings, saveSettings, resetSettings, buildSettingsMenu,
@@ -126,6 +128,12 @@ async function init() {
   const rng = makeRng(20260601);
   world = buildWorld(scene, rng, { reflectResolution: REFLECT || 256 });
 
+  // the district west of Ocean Drive: grid, blocks, parks, civic buildings, border
+  setProgress(0.68, 'LAYING OUT THE DISTRICT');
+  const city = buildCity(scene, makeRng(4242), {});
+  state.city = city;
+  state.world = world;
+
   // environment map from the sunset sky (drives the wet-road reflections)
   setProgress(0.7, 'BAKING REFLECTIONS');
   const pmrem = new THREE.PMREMGenerator(renderer);
@@ -175,6 +183,7 @@ async function init() {
     },
     freeCamera: () => { state.heroLock = false; },
     photoMode: (on) => setPhotoMode(!!on),
+    city,
     settings,
     applySettings,
     menu: (on) => openMenu(!!on),
@@ -366,13 +375,70 @@ function step(dt) {
   player.yaw += yawRate * Math.sign(player.speed || 1) * dt;
 
   const dir = new THREE.Vector3(Math.sin(player.yaw), 0, Math.cos(player.yaw));
-  player.position.addScaledVector(dir, player.speed * dt);
+  const nextX = player.position.x + dir.x * player.speed * dt;
+  const nextZ = player.position.z + dir.z * player.speed * dt;
 
-  // stay on the boulevard
-  player.position.x = THREE.MathUtils.clamp(player.position.x, -12.9, 13.2);
-  player.position.z = THREE.MathUtils.clamp(player.position.z, -100, LAYOUT.driveEnd);
+  if (hitsBuilding(nextX, nextZ)) {
+    // bump: stop and let the car settle a little
+    player.speed *= -0.18;
+    player.speed = Math.abs(player.speed) < 1.2 ? 0 : player.speed;
+  } else {
+    player.position.x = nextX;
+    player.position.z = nextZ;
+  }
 
+  clampToCity();
   return dir;
+}
+
+/* ------------------------------------------------------------------ */
+/* city bounds + building collision                                    */
+/* ------------------------------------------------------------------ */
+const CITY = {
+  // -X is the ocean promenade, +X goes inland through the district
+  xMin: -12.9,                                   // promenade balustrade
+  xMax: GRID.border.xEast - 6,                   // the fence line
+  zMin: -100,                                    // Ocean Drive south end (hero shot)
+  zMax: GRID.border.zB - 6,                      // north fence
+  // inland of the hotel row the district starts at the ring-road fence
+  zInlandMin: GRID.border.zA + 6,
+  zInlandMax: GRID.border.zB - 6,
+};
+const OCEAN_STRIP = 30;      // x <= 30 is the ocean-drive corridor (beach + hotels)
+const CAR_RADIUS = 1.05;
+
+function clampToCity() {
+  const p = player.position;
+  p.x = THREE.MathUtils.clamp(p.x, CITY.xMin, CITY.xMax);
+  p.z = THREE.MathUtils.clamp(p.z, CITY.zMin, CITY.zMax);
+}
+
+/** Cheap AABB check against the city block colliders + the hotel row. */
+function hitsBuilding(x, z) {
+  // invisible boundary: inland you cannot leave the district at its north/south ends
+  if (x > OCEAN_STRIP && (z < CITY.zInlandMin || z > CITY.zInlandMax)) return true;
+  const cols = state.city?.colliders;
+  if (cols) {
+    for (let i = 0; i < cols.length; i++) {
+      const c = cols[i];
+      if (x > c.x - c.w / 2 - CAR_RADIUS && x < c.x + c.w / 2 + CAR_RADIUS &&
+          z > c.z - c.d / 2 - CAR_RADIUS && z < c.z + c.d / 2 + CAR_RADIUS) {
+        return true;
+      }
+    }
+  }
+  // the art-déco hotel row belongs to world.js, reuse its boxes
+  const hb = world?.buildingBoxes;
+  if (hb) {
+    for (let i = 0; i < hb.length; i++) {
+      const b = hb[i];
+      if (x > b.x - b.w / 2 - CAR_RADIUS && x < b.x + b.w / 2 + CAR_RADIUS &&
+          z > b.z - b.d / 2 - CAR_RADIUS && z < b.z + b.d / 2 + CAR_RADIUS) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 /* ---------------------------------------------------------------- */

@@ -7,7 +7,8 @@
     "dev": "vite --host 0.0.0.0 --port 5173",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0 --port 4173",
-    "shots": "node tools/screenshot.mjs"
+    "shots": "node tools/screenshot.mjs",
+    "shots:city": "node tools/screenshot-city.mjs"
   },
   "repository": {
     "type": "git",
