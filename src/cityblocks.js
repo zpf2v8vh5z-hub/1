@@ -732,8 +732,9 @@ export function buildPaved(parts, rng, lot, feature) {
   const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
   const w = x1 - x0, d = z1 - z0;
 
-  const deck = feature === 'market' ? parts.plaza : parts.asphalt;
-  (deck ||= []).push(flat(w - 4, d - 4, cx, cz, 0.09));
+  // market squares get the paving deck, parking/gas the plain asphalt
+  const deckKey = feature === 'market' ? 'plaza' : 'asphalt';
+  (parts[deckKey] ||= []).push(flat(w - 4, d - 4, cx, cz, 0.09));
 
   if (feature === 'parking') {
     // rows of bays with a few parked cars
