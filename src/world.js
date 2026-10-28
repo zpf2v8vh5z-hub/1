@@ -16,7 +16,9 @@ export const LAYOUT = {
   seaY: -1.15,
   sandY: -0.62,
   zStart: -120,
-  zEnd: 1250,
+  zEnd: 2200,          // the boulevard runs far enough that its end is invisible
+  driveEnd: 1900,      // how far the player may actually drive
+  skylineZ: 2320,      // distant towers start well past the drivable stretch
 };
 
 /* deterministic RNG so the city is identical on every load */
@@ -28,6 +30,13 @@ export function makeRng(seed = 1337) {
   };
 }
 
+// distant skyline tuning: well behind the drivable stretch, and never inside the
+// corridor you look down while driving (that produced towers standing on the road)
+const SKYLINE_Z0 = 2320;   // starts past the end of the drivable boulevard
+const SKYLINE_X0 = 34;     // inland of the hotel row — never over the road or the sea
+
+const GATES = [500, 1100, 1700];   // must match cityplan.js GRID.gates
+const GATE_HALF = 14;
 const NEON = [0xff2f92, 0x00e5ff, 0xff54c8, 0x7a5cff, 0x2fffd0, 0xffa63d];
 const CAR_COLORS = [0x0a0b10, 0x121722, 0x1d222c, 0x2b2f38, 0x3b1420, 0x14202a];
 
@@ -173,11 +182,12 @@ export function buildWorld(scene, rng = makeRng(), opts = {}) {
   /* land mass behind the hotels (keeps the ocean out of the city) */
   {
     const land = new THREE.Mesh(
-      new THREE.PlaneGeometry(1200, 2200),
+      new THREE.PlaneGeometry(3600, 6400),
       new THREE.MeshStandardMaterial({ color: 0x2b2028, roughness: 0.95, metalness: 0.0 })
     );
     land.rotation.x = -Math.PI / 2;
-    land.position.set(LAYOUT.buildingX + 600, -0.02, zMid);
+    // starts at the hotel row and runs inland; covers the whole skyline band
+    land.position.set(LAYOUT.buildingX + 1800, -0.02, 1900);
     land.receiveShadow = true;
     world.add(land);
   }
@@ -217,13 +227,15 @@ export function buildWorld(scene, rng = makeRng(), opts = {}) {
 
   const buildingParts = { neon: [], white: [], roof: [], neonTubes: [] };
   const roofDetail = [];
-  const inlandParts = [];
   const buildingBoxes = [];   // for collisions / minimap
 
   let z = LAYOUT.zStart - 30;
   let idx = 0;
   while (z < LAYOUT.zEnd) {
     const w = 16 + rng() * 16;      // along z
+    // gates: gaps in the hotel row where the district streets come through
+    const gate = GATES.find((gz) => z < gz + GATE_HALF && z + w > gz - GATE_HALF);
+    if (gate !== undefined) { z = gate + GATE_HALF; continue; }
     const depth = 18 + rng() * 16;  // along x
     const tall = rng() < 0.16;
     const h = tall ? 30 + rng() * 26 : 9 + Math.pow(rng(), 1.35) * 15;
@@ -283,14 +295,8 @@ export function buildWorld(scene, rng = makeRng(), opts = {}) {
       roofDetail.push(box);
     }
 
-    // a coarser city block behind the deco row
-    if (rng() < 0.75) {
-      const bw = 10 + rng() * 20, bd = 12 + rng() * 22;
-      const bh = 8 + Math.pow(rng(), 1.4) * 34;
-      const g = new THREE.BoxGeometry(bd, bh, bw);
-      g.translate(LAYOUT.buildingX + depth + 14 + rng() * 26, bh / 2, zc + (rng() - 0.5) * 6);
-      inlandParts.push(g);
-    }
+    // The coarse filler block that used to sit behind the deco row is gone: the
+    // district grid (src/city.js) now owns everything inland of the hotel row.
 
     // neon: thin vertical tubes at the corners, roof line outline, sign glow
     const c1 = NEON[(idx * 3) % NEON.length];
@@ -347,15 +353,6 @@ export function buildWorld(scene, rng = makeRng(), opts = {}) {
     rd.receiveShadow = true;
     world.add(rd);
   }
-  if (inlandParts.length) {
-    const inland = new THREE.Mesh(mergeGeometries(inlandParts), new THREE.MeshStandardMaterial({
-      color: 0x4a3a46, roughness: 0.9, metalness: 0.05,
-      emissive: new THREE.Color(0x1a0c18), emissiveIntensity: 0.6,
-    }));
-    inland.castShadow = true;
-    inland.receiveShadow = true;
-    world.add(inland);
-  }
 
   /* =================================================================
    * PROMENADE: railing / sea wall
@@ -380,7 +377,7 @@ export function buildWorld(scene, rng = makeRng(), opts = {}) {
 
     // slim white balustrade between the pillars
     const pickets = [];
-    for (let pz = zFrom; pz < zTo; pz += 0.55) {
+    for (let pz = zFrom; pz < zTo; pz += 1.1) {
       const pk = new THREE.BoxGeometry(0.07, 0.85, 0.07);
       pk.translate(LAYOUT.railX, 0.17 + 1.05 + 0.42, pz);
       pickets.push(pk);
@@ -527,6 +524,7 @@ export function buildWorld(scene, rng = makeRng(), opts = {}) {
   }
   // hotel-side row
   for (let pz = LAYOUT.zStart + 16; pz < LAYOUT.zEnd; pz += 15 + rng() * 9) {
+    if (GATES.some((gz) => Math.abs(pz - gz) < GATE_HALF)) continue;
     palmPositions.push({ x: 13.4 + (rng() - 0.5) * 0.6, z: pz + (rng() - 0.5) * 3, s: 0.8 + rng() * 0.28, lean: -1 });
   }
 
@@ -651,6 +649,7 @@ export function buildWorld(scene, rng = makeRng(), opts = {}) {
     }
     // planters near hotels
     for (let pz = LAYOUT.zStart + 30; pz < LAYOUT.zEnd; pz += 27) {
+      if (GATES.some((gz) => Math.abs(pz - gz) < GATE_HALF + 2)) continue;
       const pot = new THREE.CylinderGeometry(0.55, 0.42, 0.75, 10);
       pot.translate(11.7, 0.55, pz);
       benchParts.push(pot);
@@ -752,23 +751,29 @@ export function buildWorld(scene, rng = makeRng(), opts = {}) {
    * ================================================================= */
   {
     const towerGeos = [];
-    const windowsTex = TEX.facadeNeon;
-    void windowsTex;
     const srng = makeRng(99);
     for (let i = 0; i < 46; i++) {
       const w = 12 + srng() * 26;
       const d = 12 + srng() * 26;
       const h = 26 + Math.pow(srng(), 1.7) * 135;
-      const x = -320 + srng() * 700;
-      const z = 640 + srng() * 520;
+
+      // The skyline belongs *behind* the end of the boulevard. It used to be
+      // scattered over z 640…1160, which dropped purple towers straight onto the
+      // roadway. Now: past the drivable stretch, inland of the hotel row only
+      // (the ocean is at -X, so anything negative would stand in the bay).
+      const x = SKYLINE_X0 + srng() * 820;
+      const z = SKYLINE_Z0 + srng() * 900;
+
       const g = new THREE.BoxGeometry(w, h, d);
       g.translate(x, h / 2, z);
       towerGeos.push(g);
     }
     const towers = new THREE.Mesh(mergeGeometries(towerGeos), new THREE.MeshStandardMaterial({
-      color: 0x4a3550, roughness: 0.85, metalness: 0.1,
-      emissive: new THREE.Color(0x3a1838), emissiveIntensity: 0.8,
+      // hazy back-lit silhouette instead of bright purple blocks
+      color: 0x6b4560, roughness: 0.95, metalness: 0.0,
+      emissive: new THREE.Color(0x2a1424), emissiveIntensity: 0.35,
     }));
+    towers.name = 'skyline';
     world.add(towers);
 
     // hazy skyline silhouette on the far side of the bay (unlit, tinted like the horizon)
@@ -815,11 +820,15 @@ export function buildWorld(scene, rng = makeRng(), opts = {}) {
   /* =================================================================
    * update
    * ================================================================= */
-  function update(dt, t) {
+  function update(dt, t, focus) {
     for (const fn of animated) fn(dt, t);
+    const pz = focus ? focus.z : 0;
     for (const car of traffic) {
       car.obj.position.z += car.speed * dt;
-      if (car.obj.position.z > 300) car.obj.position.z = 14 + Math.random() * 10;
+      // recycle traffic in a band around the player so the street never goes dead
+      if (car.obj.position.z > pz + 260 || car.obj.position.z < pz - 120) {
+        car.obj.position.z = pz + 40 + Math.random() * 180;
+      }
     }
   }
 

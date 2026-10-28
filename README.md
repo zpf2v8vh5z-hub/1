@@ -1,15 +1,19 @@
 # VICE 306 — Miami Sunset
 
 A playable **GTA-VI-style** Miami sunset driving scene that runs in the browser
-(Three.js / WebGL2). No story, no missions — just Ocean Drive at golden hour, a
-teal supercar, wet asphalt, palms and neon, built so you can compose and save
-screenshots like the reference shot.
+(Three.js / WebGL2). No story, no missions — Ocean Drive at golden hour with a
+teal supercar on wet asphalt, palms and neon, plus a whole **inland city
+district** behind the art-déco hotel row: street grid, parks, playgrounds,
+plazas, school, hospital, police, fire station, church, cinema, market, gas
+stations and parking — all enclosed by a fence and fields so you cannot drive
+out of the world.
 
 Everything you see is generated at runtime from **AI-generated textures**
 (palm fronds, art-deco facades, wet asphalt, ocean, sand, clouds) plus
 procedurally built geometry — no downloaded scene.
 
 ![hero](screenshots/01-hero.png)
+![city](screenshots/11-city-aerial.png)
 
 ---
 
@@ -37,9 +41,63 @@ through its own https host; use `VITE_HMR=on npm run dev` when working locally.
 | `P` | photo mode (drag to look, `WASD` to fly, `Space`/`Q` up & down) |
 | `H` | toggle HUD (minimap + speedometer) |
 | `ENTER` | capture a PNG screenshot (downloads `vice306-miami-*.png`) |
+| `ESC` | pause + settings menu |
 
 Photo mode keeps the current view, lets you fly the camera freely and then
 saves exactly what the canvas shows (bloom + grade included).
+
+### ESC menu
+
+`ESC` pauses the game (the world freezes, input is released) and opens the
+settings panel:
+
+| setting | effect |
+| --- | --- |
+| **Lenk-Empfindlichkeit** | 25 – 200 % steering rate; default 75 % |
+| **Kamera (Fotomodus)** | mouse-look speed in photo mode |
+| **HUD anzeigen** | minimap / speedometer / hints |
+| **Bloom / Neon-Glühen** | HDR bloom pass |
+| **Filmkorn** | film grain in the final grade |
+
+Values are stored in `localStorage` (`vice306.settings.v1`) and restored on the
+next load; *Zurücksetzen* restores the defaults. The menu is generated from a
+schema in `src/settings.js`, so adding an option is one row.
+
+Steering itself was retuned: the input ramps in over ~0.2 s instead of snapping to
+full lock, the yaw rate scales with speed and grip, and there is no pivoting while
+standing still. A 100 ms tap at 20 m/s now turns the car ~1° instead of ~25°.
+
+## The city district
+
+Ocean Drive is no longer the whole world — it is the waterfront edge of a
+district (`src/city.js`, `src/cityplan.js`, `src/cityblocks.js`).
+
+* **Street grid** — Ocean Drive plus four inland avenues (x = 170/330/490/650)
+  and 13 cross streets (z = 200 … 2000, every 150 m) form 52 blocks of roughly
+  133 × 126 m, with sidewalks, kerbs, lane paint, crosswalks, traffic lights and
+  street lamps on every corner.
+* **Gates** — the art-déco hotel row has three openings (z = 500, 1100, 1700)
+  where the cross streets come through from the boulevard, so you can drive
+  straight off the sea front into the city.
+* **What a city needs** (`BLOCK_KINDS` in `src/cityplan.js`):
+
+  | type | content |
+  | --- | --- |
+  | housing blocks | art-déco / brick / modern / office rows with lit shopfronts, courtyard parking, trees |
+  | `park`, `playground` | lawn, diagonal + ring paths, benches, lamps, playground with sand pit, climbing frame, slide, swings |
+  | `sports` | pitch with track, goals and stands |
+  | `plaza` | paved deck, tiered lit fountain, benches, hedge strips, tree rows |
+  | `school`, `hospital`, `police`, `fire`, `church`, `cinema` | civic buildings with their own massing and signage (lit red cross + helipad on the hospital, hose tower at the fire station, bell tower and gable at the church, marquee bulbs at the cinema) |
+  | `market`, `gas`, `parking` | market hall with a ring of stalls, canopy + pumps + price sign, bay-marked parking with parked cars |
+
+  Each civic building appears exactly once, spread over the district; the rest
+  is picked with weights, so the city looks different from the boulevard.
+* **Boundary** — the ring road is the last drivable street. Behind it: a
+  concrete-post fence, a 2 m hedge, scrub, dirt tracks and fields. The car is
+  clamped inside the district and stopped by the fence, and housing blocks are
+  solid AABB colliders, so you cannot drive through buildings or leave the map.
+* **Minimap** — the HUD compass picks up the new streets automatically, since it
+  reads the lot data returned by `buildCity()`.
 
 ## What's in the scene
 
@@ -79,6 +137,9 @@ Source images live in `public/textures_src/` and are post-processed by
 | `ocean.jpg` | `ocean.jpg` | resize |
 | `clouds.jpg` | `clouds.jpg` | resize |
 | `sand_src.jpg` | `sand.jpg` | resize |
+| `grass.jpg`, `field.jpg`, `hedge.jpg`, `paving.jpg` | same names | resize, tiled from world-space UVs |
+| `facade_brick.jpg`, `facade_modern.jpg`, `facade_civic.jpg` | facade maps + `*_emissive.jpg` | lit-window mask extraction |
+| `shopfront.jpg` | `shopfront.jpg` + emissive | shop window + neon mask |
 | — | `glow.png` | procedural radial glow sprite |
 
 ```bash
@@ -107,13 +168,52 @@ Results are written to `screenshots/`:
 | `05-hotel-side.png` | facade textures and neon at close range |
 | `06-rear-close.png` | car paint, tail lights, wheel detail |
 | `07-reference-style.png` | the money shot: reference framing with the in-game HUD |
+| `08-mid-boulevard.png` | the stretch that used to have skyline towers on the road |
+| `09-end-of-boulevard.png` | the far end of Ocean Drive, skyline behind it |
+| `10-settings-menu.png` | the ESC pause / settings panel |
 
-The same run also asserts that the car actually drives and steers, that photo
-mode toggles and that the screenshot API returns a PNG.
+`tools/screenshot-city.mjs` (`npm run shots:city`) covers the district and
+writes:
+
+| shot | what it checks |
+| --- | --- |
+| `11-city-aerial.png` | the whole grid: roads, parks, plazas, hotel row, ocean |
+| `12-city-gate.png` | the opening in the hotel row, from the boulevard |
+| `13-city-avenue.png` | an inland avenue at street level |
+| `14-city-plaza.png` | plaza with the tiered fountain |
+| `15-city-park.png` | park with paths, benches and trees |
+| `16-city-hospital.png` | a civic building (lit red cross, emergency canopy) |
+| `17-city-market.png` | market hall with the ring of stalls |
+| `18-city-border.png` | fence, hedge and fields at the edge of the world |
+
+The same run also asserts that:
+
+* the car actually drives and steers;
+* a 100 ms steering tap stays under 5° and the sensitivity setting scales the rate;
+* no tall ground-based mesh stands on the roadway (regression test for the
+  skyline bug — reintroducing a tower makes the run fail);
+* `ESC` opens the menu, freezes the car, the slider applies + persists, and
+  *Weiterfahren* resumes;
+* photo mode toggles and the screenshot API returns a PNG.
+
+The city run asserts that:
+
+* every required facility exists (school, hospital, police, fire, church,
+  cinema, sports, market, park, playground, plaza, gas, parking) and that no
+  merged city batch fell back to a placeholder material;
+* **no block collider overlaps a carriageway** (regression test for buildings
+  standing on the road);
+* the car can drive from the boulevard through a gate into the district (x > 70),
+  is stopped by a housing block before it reaches the facade, cannot pass the
+  fence (x stays below `GRID.border.xEast`) and cannot leave to the north.
 
 ### Known limitations
 
 * Traffic cars are low-poly stand-ins and pass through everything (no collision).
+* The skyline is decoration only: it sits past the end of the drivable boulevard.
+* Interior floors are not modelled — buildings are solid volumes, and whole
+  housing blocks are one collision box (you cannot drive into a courtyard).
+* The city runs on the same fixed sun; nothing lights up after sunset.
 * Reflections are only planar on the road; puddles elsewhere use an env map.
 * No story, no missions, no AI NPCs — this is a scene/cinematic playground.
 
@@ -129,6 +229,8 @@ __vice.placeCar(x, z, yaw);
 __vice.hud(false);                          // hide HUD
 __vice.photoMode(true);
 __vice.capture();                           // -> dataURL (also downloads)
+__vice.city.lots;                           // [{x0,x1,z0,z1,cx,cz,kind,label}]
+__vice.city.colliders;                      // solid AABBs used by the car
 ```
 
 ## Credits
