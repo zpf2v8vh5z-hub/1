@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/zpf2v8vh5z-hub/1#readme",
   "dependencies": {
+    "leaflet": "^1.9.4",
     "three": "^0.180.0"
   },
   "devDependencies": {
