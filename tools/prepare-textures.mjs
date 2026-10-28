@@ -28,6 +28,15 @@ const jobs = [
   ['facade_modern.jpg', 'facade_modern.jpg', 1408, 768, 86],
   ['shopfront.jpg', 'shopfront.jpg', 1408, 768, 86],
   ['facade_civic.jpg', 'facade_civic.jpg', 1408, 768, 86],
+  ['rock.jpg', 'rock.jpg', 1024, 1024, 84],
+  ['dirt.jpg', 'dirt.jpg', 1024, 1024, 84],
+  ['forest.jpg', 'forest.jpg', 1024, 1024, 82],
+  ['foliage.jpg', 'foliage.jpg', 512, 512, 86],
+  ['bark.jpg', 'bark.jpg', 512, 512, 86],
+  ['roof.jpg', 'roof.jpg', 1024, 1024, 84],
+  ['facade_office.jpg', 'facade_office.jpg', 1408, 768, 86],
+  ['facade_residential.jpg', 'facade_residential.jpg', 1408, 768, 86],
+  ['facade_industrial.jpg', 'facade_industrial.jpg', 1408, 768, 86],
 ];
 
 for (const [src, dst, w, h, q] of jobs) {
@@ -154,4 +163,6 @@ await emissiveMask('facade_brick.jpg', 'facade_brick_emissive.jpg');
 await emissiveMask('facade_modern.jpg', 'facade_modern_emissive.jpg');
 await emissiveMask('shopfront.jpg', 'shopfront_emissive.jpg');
 await emissiveMask('facade_civic.jpg', 'facade_civic_emissive.jpg');
+await emissiveMask('facade_office.jpg', 'facade_office_emissive.jpg');
+await emissiveMask('facade_residential.jpg', 'facade_residential_emissive.jpg');
 console.log('emissive masks done');

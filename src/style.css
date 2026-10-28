@@ -42,6 +42,7 @@ canvas#scene { position: absolute; inset: 0; width: 100%; height: 100%; display:
 /* ---------- HUD ---------- */
 #hud { position: absolute; inset: 0; pointer-events: none; z-index: 20; }
 #hud.hidden > canvas,
+#hud.hidden > #mapwrap,
 #hud.hidden > #hint,
 #hud.hidden > #fps,
 #hud.hidden > .vignette { opacity: 0; }
@@ -59,6 +60,20 @@ canvas#scene { position: absolute; inset: 0; width: 100%; height: 100%; display:
   transition: opacity .5s ease;
 }
 #minimap { left: 22px; }
+#mapwrap {
+  position: absolute; left: 22px; bottom: 22px;
+  width: 260px; height: 260px;
+  transition: opacity .45s ease;
+}
+#mapwrap #minimap { position: static; left: auto; bottom: auto; }
+#district {
+  position: absolute; left: 50%; bottom: -2px; transform: translateX(-50%);
+  font-size: 10px; letter-spacing: 2.4px; color: rgba(255,255,255,.86);
+  background: rgba(8, 10, 14, .55);
+  border: 1px solid rgba(255,255,255,.14);
+  padding: 4px 12px; border-radius: 999px;
+  white-space: nowrap; backdrop-filter: blur(6px);
+}
 #speedo { right: 22px; }
 
 #hint {

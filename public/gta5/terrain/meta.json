@@ -1,0 +1,32 @@
+{
+  "world": {
+    "x0": -4100,
+    "y0": -4040,
+    "x1": 4900,
+    "y1": 8370,
+    "width": 9000,
+    "height": 12410
+  },
+  "height": {
+    "scale": 806.2,
+    "offset": 0,
+    "max": 799.6477412832838,
+    "min": 0,
+    "texture": [
+      2048,
+      2816
+    ]
+  },
+  "masks": {
+    "width": 1024,
+    "height": 1152
+  },
+  "heightBin": {
+    "file": "height.bin",
+    "width": 2048,
+    "height": 2816,
+    "scale": 0.05,
+    "min": 0,
+    "max": 756.5169677734375
+  }
+}

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VICE 306 — Miami Sunset</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="app">
+    <canvas id="scene"></canvas>
+
+    <!-- loading -->
+    <div id="loader">
+      <div class="loader-inner">
+        <div class="logo">VICE<span>306</span></div>
+        <div class="tagline">MIAMI BEACH &middot; SUNSET BOULEVARD</div>
+        <div class="bar"><i id="bar-fill"></i></div>
+        <div class="status" id="loader-status">INITIALISING</div>
+      </div>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud">
+      <div class="vignette"></div>
+      <canvas id="minimap" width="260" height="260"></canvas>
+      <canvas id="speedo" width="260" height="260"></canvas>
+      <div id="hint">
+        <b>W A S D</b> drive &nbsp;·&nbsp; <b>SHIFT</b> boost &nbsp;·&nbsp; <b>P</b> photo mode &nbsp;·&nbsp; <b>H</b> hide HUD &nbsp;·&nbsp; <b>ESC</b> settings &nbsp;·&nbsp; <b>ENTER</b> save screenshot
+      </div>
+      <div id="photo-ui">
+        <div class="photo-frame"></div>
+        <div class="photo-hint">PHOTO MODE — drag to look · WASD/Space to fly · ENTER to capture · P to exit</div>
+        <div id="toast"></div>
+      </div>
+      <div id="fps"></div>
+    </div>
+
+    <!-- ESC menu / settings -->
+    <div id="menu" aria-hidden="true">
+      <div class="menu-panel" role="dialog" aria-modal="true" aria-labelledby="menu-title">
+        <div class="menu-head">
+          <h1 id="menu-title">PAUSE</h1>
+          <p class="menu-sub">VICE&nbsp;306 &middot; MIAMI BEACH &middot; SUNSET BOULEVARD</p>
+        </div>
+        <div class="menu-settings" id="menu-settings"></div>
+        <div class="menu-actions">
+          <button type="button" class="btn primary" id="menu-resume">WEITERFAHREN</button>
+          <button type="button" class="btn" id="menu-reset">ZURÜCKSETZEN</button>
+        </div>
+        <div class="menu-foot"><b>ESC</b> zurück ins Spiel &nbsp;·&nbsp; Einstellungen werden automatisch gespeichert</div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

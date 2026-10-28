@@ -68,9 +68,9 @@ export function createPostFX(renderer, scene, camera, { quality = 'high' } = {})
 
   const bloom = new UnrealBloomPass(
     new THREE.Vector2(size.x, size.y),
-    quality === 'high' ? 0.42 : 0.34,  // strength
-    quality === 'high' ? 0.72 : 0.6,   // radius
-    0.86                                // threshold
+    quality === 'high' ? 0.30 : 0.24,  // strength
+    quality === 'high' ? 0.62 : 0.52,   // radius
+    1.02                                // threshold
   );
   composer.addPass(bloom);
 

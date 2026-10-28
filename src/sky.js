@@ -44,8 +44,8 @@ export function createSky(scene, sunDir) {
 
         // ---- sky gradient (deep violet zenith -> hot pink -> molten horizon)
         vec3 zenith  = vec3(0.075, 0.020, 0.150);
-        vec3 high    = vec3(0.330, 0.045, 0.330);
-        vec3 mid     = vec3(0.780, 0.090, 0.330);
+        vec3 high    = vec3(0.280, 0.095, 0.300);
+        vec3 mid     = vec3(0.760, 0.150, 0.290);
         vec3 low     = vec3(1.000, 0.240, 0.190);
         vec3 horizon = vec3(1.000, 0.470, 0.140);
 
@@ -77,9 +77,9 @@ export function createSky(scene, sunDir) {
 
         // clouds are lit from the sun side -> warm rims, deep magenta cores
         vec3 warm = mix(vec3(1.00, 0.34, 0.26), vec3(1.00, 0.66, 0.30), pow(cosA, 1.6));
-        vec3 cool = vec3(0.38, 0.05, 0.26);
+        vec3 cool = vec3(0.30, 0.10, 0.24);
         vec3 cloudCol = mix(cool, warm, clamp(pow(cosA, 0.9) * 1.35, 0.0, 1.0));
-        col = mix(col, cloudCol, cloud * 0.85);
+        col = mix(col, cloudCol, cloud * 0.72);
         col += warm * cloud * 0.16;
 
         // ---- hazy far shore / sea horizon below the horizon line
