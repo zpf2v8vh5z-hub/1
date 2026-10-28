@@ -1,3 +1,13 @@
+# GTA 5 Interaktive Gebäudekarte (Los Santos & Blaine County)
+
+Hochdetaillierte interaktive **8K-Karte von GTA 5 (`8192 × 8192 px`)** in `index.html` / `gta5-map.html` mit **3.261 anklickbaren Gebäuden** (948 kuratierte Geschäfte, Wahrzeichen, Behörden, Hotels, Werkstätten, Immobilien & MLO-Innenräume + 2.313 physische Gebäudegrundrisse aus der Rockstar-Atlaskarte).
+
+- **4 Kartenansichten**: Satellit HD, Rockstar-Atlas, Hybrid & Nacht-Radar + einblendbare Bezirksgrenzen, Straßenvektoren und Koordinatenraster.
+- **Gebäude-Informationsfenster**: Klick auf jeden Punkt öffnet ein Detailfenster mit Live-Luftbild-/Grundriss-Vorschau, Gebäudetyp, Slogan, MLO-/Innenraum-Status, exakter Straßenadresse & Querstraße, Stadtteil, Grundfläche (`m²` & `L × B m`), Höhe (`Z`), Öffnungszeiten, Kaufpreis, `X/Y/Z`-Koordinaten und den 5 nächsten Nachbargebäuden.
+- **Starten**: `npm install && npm run dev` (oder `index.html` direkt öffnen). Die frühere Szene *VICE 306* bleibt unter `vice306.html` erhalten.
+
+---
+
 # VICE 306 — Miami Sunset
 
 A playable **GTA-VI-style** Miami sunset driving scene that runs in the browser
